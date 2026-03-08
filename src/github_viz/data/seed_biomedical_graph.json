@@ -1,0 +1,239 @@
+{
+  "version": "2026.03-demo",
+  "entities": {
+    "diseases": [
+      {
+        "id": "disease:parkinsons",
+        "label": "Parkinson's disease",
+        "aliases": ["parkinson disease", "pd", "parkinson's"]
+      }
+    ],
+    "symptoms": [
+      {
+        "id": "symptom:tremor",
+        "label": "Tremor",
+        "aliases": ["resting tremor"]
+      },
+      {
+        "id": "symptom:rigidity",
+        "label": "Rigidity",
+        "aliases": ["muscle rigidity"]
+      },
+      {
+        "id": "symptom:bradykinesia",
+        "label": "Bradykinesia",
+        "aliases": ["slowness of movement"]
+      }
+    ],
+    "biomarkers": [
+      {
+        "id": "biomarker:elevated-inflammation",
+        "label": "Elevated inflammation",
+        "aliases": ["high crp", "elevated crp", "inflammation"]
+      },
+      {
+        "id": "biomarker:microglial-activation",
+        "label": "Microglial activation",
+        "aliases": ["activated microglia"]
+      },
+      {
+        "id": "biomarker:neuroinflammation",
+        "label": "Neuroinflammation",
+        "aliases": ["neuro inflammatory state"]
+      }
+    ],
+    "drugs": [
+      {
+        "id": "drug:metformin",
+        "label": "Metformin",
+        "aliases": ["glucophage"]
+      },
+      {
+        "id": "drug:rasagiline",
+        "label": "Rasagiline",
+        "aliases": []
+      }
+    ],
+    "genes": [
+      {
+        "id": "gene:PRKAA1",
+        "label": "PRKAA1",
+        "aliases": ["ampk alpha 1", "ampk"]
+      },
+      {
+        "id": "gene:LRRK2",
+        "label": "LRRK2",
+        "aliases": []
+      },
+      {
+        "id": "gene:NLRP3",
+        "label": "NLRP3",
+        "aliases": []
+      }
+    ],
+    "proteins": [
+      {
+        "id": "protein:AMPK",
+        "label": "AMPK",
+        "aliases": ["5' amp-activated protein kinase"]
+      },
+      {
+        "id": "protein:NLRP3-inflammasome",
+        "label": "NLRP3 inflammasome",
+        "aliases": []
+      }
+    ],
+    "pathways": [
+      {
+        "id": "pathway:ampk",
+        "label": "AMPK pathway",
+        "aliases": ["ampk activation"]
+      },
+      {
+        "id": "pathway:neuroinflammation",
+        "label": "Neuroinflammation signaling",
+        "aliases": ["microglial inflammatory signaling"]
+      }
+    ]
+  },
+  "papers": [
+    {
+      "id": "paper:metformin-neuroinflammation-2023",
+      "title": "Metformin attenuates neuroinflammatory signaling in Parkinsonian models",
+      "journal": "Neurotherapeutics",
+      "year": 2023,
+      "citation": "Neurotherapeutics (2023)",
+      "abstract_snippet": "Preclinical data linked metformin exposure with reduced microglial activation and lower inflammatory cytokine output.",
+      "entities": ["Metformin", "Parkinson's disease", "Neuroinflammation signaling", "AMPK pathway"]
+    },
+    {
+      "id": "paper:ampk-microglia-2022",
+      "title": "AMPK activation suppresses microglial inflammatory programs",
+      "journal": "Brain Research",
+      "year": 2022,
+      "citation": "Brain Research (2022)",
+      "abstract_snippet": "AMPK activation was associated with dampened inflammatory transcriptional programs in activated microglia.",
+      "entities": ["AMPK", "Microglial activation", "Neuroinflammation signaling"]
+    },
+    {
+      "id": "paper:nlrp3-pd-2021",
+      "title": "NLRP3 inflammasome activity as a driver of Parkinson's disease inflammation",
+      "journal": "Movement Disorders",
+      "year": 2021,
+      "citation": "Movement Disorders (2021)",
+      "abstract_snippet": "Inflammasome signaling remained elevated in Parkinson's disease cohorts with inflammatory biomarkers.",
+      "entities": ["NLRP3 inflammasome", "Parkinson's disease", "Elevated inflammation"]
+    },
+    {
+      "id": "paper:rasagiline-pd-2020",
+      "title": "Rasagiline in Parkinson's disease symptom management",
+      "journal": "Clinical Neuropharmacology",
+      "year": 2020,
+      "citation": "Clinical Neuropharmacology (2020)",
+      "abstract_snippet": "Rasagiline remains a symptomatic therapy with modest signal for downstream inflammatory modulation.",
+      "entities": ["Rasagiline", "Parkinson's disease"]
+    }
+  ],
+  "relationships": {
+    "gene_disease": [
+      {
+        "gene": "PRKAA1",
+        "disease": "Parkinson's disease",
+        "papers": ["paper:ampk-microglia-2022"]
+      },
+      {
+        "gene": "LRRK2",
+        "disease": "Parkinson's disease",
+        "papers": ["paper:nlrp3-pd-2021"]
+      },
+      {
+        "gene": "NLRP3",
+        "disease": "Parkinson's disease",
+        "papers": ["paper:nlrp3-pd-2021"]
+      }
+    ],
+    "protein_pathway": [
+      {
+        "protein": "AMPK",
+        "pathway": "AMPK pathway",
+        "papers": ["paper:ampk-microglia-2022"]
+      },
+      {
+        "protein": "NLRP3 inflammasome",
+        "pathway": "Neuroinflammation signaling",
+        "papers": ["paper:nlrp3-pd-2021"]
+      }
+    ],
+    "pathway_disease": [
+      {
+        "pathway": "AMPK pathway",
+        "disease": "Parkinson's disease",
+        "papers": ["paper:metformin-neuroinflammation-2023", "paper:ampk-microglia-2022"]
+      },
+      {
+        "pathway": "Neuroinflammation signaling",
+        "disease": "Parkinson's disease",
+        "papers": ["paper:nlrp3-pd-2021"]
+      }
+    ],
+    "biomarker_pathway": [
+      {
+        "biomarker": "Elevated inflammation",
+        "pathway": "Neuroinflammation signaling",
+        "papers": ["paper:nlrp3-pd-2021"]
+      },
+      {
+        "biomarker": "Microglial activation",
+        "pathway": "Neuroinflammation signaling",
+        "papers": ["paper:ampk-microglia-2022"]
+      },
+      {
+        "biomarker": "Neuroinflammation",
+        "pathway": "Neuroinflammation signaling",
+        "papers": ["paper:metformin-neuroinflammation-2023"]
+      }
+    ],
+    "drug_target": [
+      {
+        "drug": "Metformin",
+        "protein": "AMPK",
+        "effect": "activates",
+        "papers": ["paper:metformin-neuroinflammation-2023", "paper:ampk-microglia-2022"]
+      },
+      {
+        "drug": "Metformin",
+        "protein": "NLRP3 inflammasome",
+        "effect": "downregulates",
+        "papers": ["paper:nlrp3-pd-2021"]
+      },
+      {
+        "drug": "Rasagiline",
+        "protein": "AMPK",
+        "effect": "indirect",
+        "papers": ["paper:rasagiline-pd-2020"]
+      }
+    ],
+    "drug_hypotheses": [
+      {
+        "drug": "Metformin",
+        "disease": "Parkinson's disease",
+        "mechanism": "Metformin may reduce neuroinflammation via AMPK pathway activation and dampening of inflammasome signaling.",
+        "biomarker_matches": ["Elevated inflammation", "Neuroinflammation", "Microglial activation"],
+        "genes": ["PRKAA1", "NLRP3"],
+        "proteins": ["AMPK", "NLRP3 inflammasome"],
+        "pathways": ["AMPK pathway", "Neuroinflammation signaling"],
+        "papers": ["paper:metformin-neuroinflammation-2023", "paper:ampk-microglia-2022", "paper:nlrp3-pd-2021"]
+      },
+      {
+        "drug": "Rasagiline",
+        "disease": "Parkinson's disease",
+        "mechanism": "Rasagiline has symptomatic relevance with lighter inflammatory evidence support in the seeded graph.",
+        "biomarker_matches": [],
+        "genes": ["LRRK2"],
+        "proteins": ["AMPK"],
+        "pathways": ["AMPK pathway"],
+        "papers": ["paper:rasagiline-pd-2020"]
+      }
+    ]
+  }
+}
