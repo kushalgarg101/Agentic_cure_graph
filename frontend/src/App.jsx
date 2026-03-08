@@ -170,13 +170,12 @@ function App() {
 
       <div className="main-canvas">
         <div className="canvas-header">
-          <h1>Agentic Cure Graph</h1>
-          <div className="status-indicator">
-            <span className={`status-dot ${isProcessing ? 'pulsing' : 'idle'}`}></span>
-            <span className="status-text">
-              {isProcessing ? "Agentic Processing Active..." : "System Idle"}
-            </span>
-          </div>
+          {isProcessing && (
+            <div className="status-indicator">
+              <span className="status-dot pulsing"></span>
+              <span className="status-text">Agentic Processing Active...</span>
+            </div>
+          )}
         </div>
         <GraphCanvas graphData={graphData} />
 

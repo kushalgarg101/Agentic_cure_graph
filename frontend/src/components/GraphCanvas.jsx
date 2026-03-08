@@ -66,28 +66,53 @@ export default function GraphCanvas({ graphData }) {
                 linkDirectionalArrowLength={3.5}
                 linkDirectionalArrowRelPos={1}
                 nodeCanvasObject={(node, ctx, globalScale) => {
-                    const label = node.id;
-                    const fontSize = 12 / globalScale;
-                    ctx.font = `${fontSize}px Sans-Serif`;
-                    const textWidth = ctx.measureText(label).width;
-                    const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+                    const nodeColor = getNodeColor(node);
+                    const nodeRadius = 5;
 
-                    ctx.fillStyle = 'rgba(11, 15, 25, 0.8)';
-                    ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, ...bckgDimensions);
-
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = getNodeColor(node);
-                    ctx.fillText(label, node.x, node.y);
-
-                    // Add a subtle glow
-                    ctx.shadowColor = getNodeColor(node);
+                    // 1. Draw node circle with glow
+                    ctx.shadowColor = nodeColor;
                     ctx.shadowBlur = 10;
                     ctx.beginPath();
-                    ctx.arc(node.x, node.y, 4, 0, 2 * Math.PI, false);
-                    ctx.fillStyle = getNodeColor(node);
+                    ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = nodeColor;
                     ctx.fill();
                     ctx.shadowBlur = 0; // reset
+
+                    // 2. Draw text label below the node
+                    // Use node.label if available, fallback to id
+                    const label = node.label || node.id;
+                    const fontSize = 11 / globalScale;
+                    ctx.font = `${fontSize}px Sans-Serif`;
+                    const textWidth = ctx.measureText(label).width;
+                    const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.4);
+
+                    // Place text just below the node
+                    const textY = node.y + nodeRadius + (fontSize / 2) + (4 / globalScale);
+
+                    // Background pill
+                    ctx.fillStyle = 'rgba(11, 15, 25, 0.85)';
+                    ctx.fillRect(
+                        node.x - bckgDimensions[0] / 2,
+                        textY - bckgDimensions[1] / 2,
+                        bckgDimensions[0],
+                        bckgDimensions[1]
+                    );
+
+                    // Subtle border around pill to match node color
+                    ctx.strokeStyle = nodeColor;
+                    ctx.lineWidth = 0.5 / globalScale;
+                    ctx.strokeRect(
+                        node.x - bckgDimensions[0] / 2,
+                        textY - bckgDimensions[1] / 2,
+                        bckgDimensions[0],
+                        bckgDimensions[1]
+                    );
+
+                    // Text
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#E2E8F0';
+                    ctx.fillText(label, node.x, textY);
                 }}
                 backgroundColor="transparent"
             />
