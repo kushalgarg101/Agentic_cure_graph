@@ -1,0 +1,73 @@
+.input-panel {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    height: 100%;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 0;
+    /* flat left panel */
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.icon-cyan {
+    color: var(--acc-cyan);
+}
+
+.panel-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #fff, var(--acc-cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.input-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-grow: 1;
+}
+
+.input-form label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.input-form textarea {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--text-main);
+    font-family: 'Consolas', monospace;
+    /* Monospace for patient data feels techy */
+    font-size: 0.9rem;
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.input-form textarea:focus {
+    outline: none;
+    border-color: rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.1);
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
