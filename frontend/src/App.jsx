@@ -29,11 +29,16 @@ function App() {
         .map(l => l.replace(/^[^:]+:\s*/i, '').trim())
         .filter(Boolean);
 
+    // Parse sex from "Sex: Male" etc.
+    const sexRaw = extract("sex:")[0] || "unknown";
+    const sexNormalized = sexRaw.toLowerCase();
+    const validSex = ["male", "female", "other"].includes(sexNormalized) ? sexNormalized : "unknown";
+
     return {
       patient_case: {
         patient_id: "demo-patient",
         age_range: extract("age:")[0] || "60-69",
-        sex: "unknown",
+        sex: validSex,
         diagnoses: extract("diagnosis:").concat(extract("diagnoses:")),
         symptoms: extract("symptoms:").flatMap(s => s.split(',').map(t => t.trim())),
         biomarkers: extract("biomarker:").concat(extract("biomarkers:")),
@@ -157,10 +162,33 @@ function App() {
 
   // ── render ──────────────────────────────────────────────────────────
 
+  // HERO VIEW (Before analysis)
+  if (!sessionId) {
+    return (
+      <div className="app-container hero-mode">
+        <div className="hero-content">
+          <div className="hero-text">
+            <h1>Agentic Cure Graph</h1>
+            <p>Patient-driven biomedical reasoning system for clinical hypothesis generation.</p>
+          </div>
+          <div className="hero-input-wrapper">
+            <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} heroMode={true} />
+            {error && (
+              <div className="error-banner">
+                <p>{error}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // DASHBOARD VIEW (After analysis)
   return (
-    <div className="app-container">
+    <div className="app-container dashboard-mode">
       <div className="sidebar-left">
-        <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} />
+        <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} heroMode={false} />
         {error && (
           <div className="error-banner">
             <p>{error}</p>
@@ -202,7 +230,10 @@ function App() {
       </div>
 
       <div className="sidebar-right">
-        <HypothesisPanel hypotheses={hypotheses} />
+        <HypothesisPanel
+          hypotheses={hypotheses}
+          patientSummary={stats?.patient_profile?.summary || stats?.patient_profile?.label || 'Patient case'}
+        />
       </div>
     </div>
   );

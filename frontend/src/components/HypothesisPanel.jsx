@@ -1,8 +1,43 @@
-import React from 'react';
-import { Microscope, ArrowRight, BookOpen, FlaskConical } from 'lucide-react';
+import React, { useState } from 'react';
+import { Microscope, ArrowRight, BookOpen, FlaskConical, Bot, Activity } from 'lucide-react';
 import './HypothesisPanel.css';
 
-export default function HypothesisPanel({ hypotheses }) {
+const API_BASE = "http://localhost:8000";
+
+export default function HypothesisPanel({ hypotheses, patientSummary }) {
+    const [enrichingId, setEnrichingId] = useState(null);
+    const [enrichments, setEnrichments] = useState({});
+
+    const handleEnrich = async (hyp) => {
+        if (!patientSummary) return;
+        setEnrichingId(hyp.id);
+
+        try {
+            const response = await fetch(`${API_BASE}/enrich`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    hypothesis_id: hyp.id,
+                    patient_summary: patientSummary,
+                    hypothesis_label: hyp.label,
+                    hypothesis_mechanism: hyp.summary || ""
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setEnrichments(prev => ({
+                    ...prev,
+                    [hyp.id]: data.enrichment
+                }));
+            }
+        } catch (err) {
+            console.error("Enrichment failed", err);
+        } finally {
+            setEnrichingId(null);
+        }
+    };
+
     if (!hypotheses || hypotheses.length === 0) {
         return (
             <div className="hypothesis-panel glass-panel">
@@ -69,9 +104,31 @@ export default function HypothesisPanel({ hypotheses }) {
                         {hyp.meta?.biomarker_overlap?.length > 0 && (
                             <div className="hyp-biomarkers">
                                 <FlaskConical size={14} />
-                                <span>Biomarker overlap: {hyp.meta.biomarker_overlap.join(', ')}</span>
+                                <span>Biomarker: {hyp.meta.biomarker_overlap.join(', ')}</span>
                             </div>
                         )}
+
+                        {/* AI Enrichment Section */}
+                        <div className="hyp-ai-section">
+                            {enrichments[hyp.id] ? (
+                                <div className="ai-insight-box">
+                                    <Bot size={14} className="icon-cyan" />
+                                    <p>{enrichments[hyp.id]}</p>
+                                </div>
+                            ) : (
+                                <button
+                                    className="btn-text ai-action-btn"
+                                    onClick={() => handleEnrich(hyp)}
+                                    disabled={enrichingId === hyp.id}
+                                >
+                                    {enrichingId === hyp.id ? (
+                                        <><Activity size={12} className="spinner" /> Analyzing...</>
+                                    ) : (
+                                        <><Bot size={12} /> View AI Reasoning</>
+                                    )}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>

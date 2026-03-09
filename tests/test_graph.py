@@ -4,10 +4,10 @@ from github_viz.analysis.graph import analyze_case
 from github_viz.analysis.stats import compute_stats, find_shortest_path, search_nodes
 
 
-def build_demo_graph():
+def build_sample_graph():
     return analyze_case(
         patient_case={
-            "patient_id": "demo-001",
+            "patient_id": "case-001",
             "age_range": "60-69",
             "sex": "female",
             "diagnoses": ["Parkinson's disease"],
@@ -22,7 +22,7 @@ def build_demo_graph():
 
 
 def test_analyze_case_builds_patient_and_hypothesis_nodes():
-    graph = build_demo_graph()
+    graph = build_sample_graph()
     node_types = {node["type"] for node in graph["nodes"]}
 
     assert "patient" in node_types
@@ -32,7 +32,7 @@ def test_analyze_case_builds_patient_and_hypothesis_nodes():
 
 
 def test_metformin_hypothesis_is_ranked():
-    graph = build_demo_graph()
+    graph = build_sample_graph()
     hypotheses = sorted(
         [node for node in graph["nodes"] if node["type"] == "hypothesis"],
         key=lambda item: item["score"],
@@ -46,7 +46,7 @@ def test_metformin_hypothesis_is_ranked():
 
 
 def test_compute_stats_returns_biomedical_metrics():
-    graph = build_demo_graph()
+    graph = build_sample_graph()
     stats = compute_stats(graph)
 
     assert stats["total_nodes"] >= 1
@@ -57,20 +57,20 @@ def test_compute_stats_returns_biomedical_metrics():
 
 
 def test_shortest_path_connects_patient_to_supporting_paper():
-    graph = build_demo_graph()
+    graph = build_sample_graph()
     path = find_shortest_path(
         graph,
-        "patient:demo-001",
+        "patient:case-001",
         "paper:metformin-neuroinflammation-2023",
     )
 
     assert path is not None
-    assert path[0] == "patient:demo-001"
+    assert path[0] == "patient:case-001"
     assert path[-1] == "paper:metformin-neuroinflammation-2023"
 
 
 def test_search_finds_biomarker_and_hypothesis():
-    graph = build_demo_graph()
+    graph = build_sample_graph()
     biomarker_results = search_nodes(graph, "microglial")
     hypothesis_results = search_nodes(graph, "metformin")
 

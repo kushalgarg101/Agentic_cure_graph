@@ -1,0 +1,12 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./var:/app/var
+    command: ["python", "-m", "github_viz.cli", "serve", "--port", "8000"]

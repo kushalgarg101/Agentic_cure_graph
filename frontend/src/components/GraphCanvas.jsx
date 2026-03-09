@@ -116,6 +116,19 @@ export default function GraphCanvas({ graphData }) {
                 }}
                 backgroundColor="transparent"
             />
+            {/* Color Legend */}
+            <div className="legend-overlay glass-panel">
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#E040FB' }}></span> Patient</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#FF5252' }}></span> Disease</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#FFB020' }}></span> Symptom</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#00E5FF' }}></span> Biomarker</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#00FFA3' }}></span> Drug</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#7C4DFF' }}></span> Gene</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#448AFF' }}></span> Protein</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#FF6E40' }}></span> Pathway</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#9E9E9E' }}></span> Paper</div>
+                <div className="legend-item"><span className="legend-dot" style={{ background: '#FFEA00' }}></span> Hypothesis</div>
+            </div>
         </div>
     );
 }

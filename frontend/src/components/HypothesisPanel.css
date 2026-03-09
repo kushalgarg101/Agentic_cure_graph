@@ -159,3 +159,44 @@
     color: var(--acc-amber);
     margin-top: 8px;
 }
+
+.hyp-ai-section {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dotted rgba(255, 255, 255, 0.1);
+}
+
+.ai-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+}
+
+.ai-action-btn .spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+.icon-cyan {
+    color: var(--acc-cyan);
+}
+
+.ai-insight-box {
+    background: rgba(0, 229, 255, 0.05);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+}
+
+.ai-insight-box p {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #E2E8F0;
+    margin: 0;
+}
