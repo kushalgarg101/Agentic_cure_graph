@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 
 EvidenceMode = Literal["offline", "hybrid"]
 Sex = Literal["female", "male", "other", "unknown"]
+InputFormat = Literal["structured", "fhir"]
 
 
 class AiSummaryOptions(BaseModel):
@@ -31,7 +32,7 @@ class AiSummaryOptions(BaseModel):
 class PatientCase(BaseModel):
     """Structured patient case used to seed Cure Graph analysis."""
 
-    patient_id: str = "demo-patient"
+    patient_id: str = "patient-record"
     age_range: str = Field("60-69", description="Age band, not exact DOB")
     sex: Sex = "unknown"
     diagnoses: list[str] = Field(default_factory=list)
@@ -70,6 +71,7 @@ class AnalyzeRequest(BaseModel):
     evidence_mode: EvidenceMode = "hybrid"
     with_ai: bool = False
     ai: AiSummaryOptions | None = None
+    input_format: InputFormat = "structured"
 
     @field_validator("report_text")
     @classmethod
@@ -79,3 +81,32 @@ class AnalyzeRequest(BaseModel):
 
 class AnalyzeLocalRequest(AnalyzeRequest):
     """Backward-compatible alias for the primary analyze request."""
+
+
+class FhirNormalizeRequest(BaseModel):
+    """Request payload for normalizing a FHIR-like record."""
+
+    record: dict[str, Any]
+
+
+class AnalysisCreatedResponse(BaseModel):
+    """Created analysis response."""
+
+    id: str
+    status: str
+    detail: str
+
+
+class AnalysisStatusResponse(BaseModel):
+    """Analysis status resource."""
+
+    id: str
+    status: str
+    detail: str
+    created_at: str
+    updated_at: str
+    completed_at: str | None = None
+    node_count: int = 0
+    link_count: int = 0
+    hypothesis_count: int = 0
+    warnings: list[str] = Field(default_factory=list)

@@ -37,7 +37,7 @@ def enrich_case_summary(patient_summary: str, hypotheses: list[dict], *, ai_opti
         }
 
     prompt = (
-        "You are helping explain a biomedical hypothesis ranking for a hackathon demo. "
+        "You are helping explain a biomedical hypothesis ranking for a clinician-facing research assistant. "
         "Return strict JSON with keys patient_summary and top_hypothesis_summary. "
         "Keep each value to one sentence.\n\n"
         f"PATIENT: {patient_summary}\n"

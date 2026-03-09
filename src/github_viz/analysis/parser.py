@@ -63,7 +63,7 @@ def parse_patient_case(patient_case: dict, report_text: str, dictionary: Extract
     medications = merge_terms(patient_case.get("medications", []), narrative_entities.get("medications", []))
 
     return ParsedPatientCase(
-        patient_id=str(patient_case.get("patient_id") or "demo-patient").strip() or "demo-patient",
+        patient_id=str(patient_case.get("patient_id") or "patient-record").strip() or "patient-record",
         age_range=str(patient_case.get("age_range") or "unknown").strip() or "unknown",
         sex=str(patient_case.get("sex") or "unknown").strip() or "unknown",
         diagnoses=diagnoses,

@@ -23,10 +23,11 @@ def analyze_case(
     evidence_mode: str,
     with_ai: bool,
     ai_options: dict | None = None,
+    evidence_bundle: dict | None = None,
 ) -> dict:
     """Analyze a patient case and return graph JSON consumed by API/UI."""
     started_at = time.monotonic()
-    seed = load_seed_data()
+    seed = evidence_bundle or load_seed_data()
     extraction_dictionary = build_extraction_dictionary(seed["entities"])
     parsed_case = parse_patient_case(patient_case, report_text, extraction_dictionary)
 
@@ -304,6 +305,7 @@ def _attach_papers(nodes, links, papers_by_id, paper_ids, source_id):
                 "year": paper.get("year", ""),
                 "citation": paper.get("citation", ""),
                 "entities": paper.get("entities", []),
+                "provider_id": paper.get("provider_id", "curated_seed"),
             },
         )
         nodes.setdefault(node.id, node)
