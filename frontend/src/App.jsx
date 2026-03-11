@@ -13,6 +13,7 @@ function App() {
   const [hypotheses, setHypotheses] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
+  const [dataSources, setDataSources] = useState([]);
 
   // ── helpers ──────────────────────────────────────────────────────────
 
@@ -45,13 +46,31 @@ function App() {
         medications: extract("medication:").concat(extract("medications:")),
       },
       report_text: text,
-      evidence_mode: "offline",
+      evidence_mode: "hybrid",
       with_ai: false,
       ai: null,
     };
   };
 
   // ── data fetching ───────────────────────────────────────────────────
+
+  const fetchDataSources = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/datasets`);
+      if (res.ok) {
+        const data = await res.json();
+        const sources = data.items || [];
+        setDataSources(sources.map(s => s.provider_id));
+      }
+    } catch (err) {
+      console.error("Error fetching data sources:", err);
+    }
+  };
+
+  // Fetch data sources on mount
+  useEffect(() => {
+    fetchDataSources();
+  }, []);
 
   const fetchGraphData = async (sid) => {
     try {
@@ -209,6 +228,16 @@ function App() {
 
         {stats && !isProcessing && (
           <div className="stats-overlay glass-panel">
+            <div className="data-sources">
+              <span className="sources-label">Data Sources:</span>
+              {dataSources.length > 0 ? (
+                dataSources.map(source => (
+                  <span key={source} className="source-badge">{source}</span>
+                ))
+              ) : (
+                <span className="source-badge">loading...</span>
+              )}
+            </div>
             <div className="stat-item">
               <span className="stat-value">{stats.total_nodes}</span>
               <span className="stat-label">Nodes</span>

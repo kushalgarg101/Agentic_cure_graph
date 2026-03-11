@@ -99,6 +99,32 @@
   display: flex;
   gap: 32px;
   z-index: 10;
+  align-items: center;
+}
+
+.data-sources {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-right: 16px;
+}
+
+.sources-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.source-badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: var(--acc-cyan);
+  text-transform: lowercase;
 }
 
 .stat-item {
