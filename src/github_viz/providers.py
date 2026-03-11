@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from github_viz.analysis.graph import DATA_FILE
 from github_viz.config import Settings
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -59,10 +61,13 @@ class JsonFileEvidenceProvider(EvidenceProvider):
 
     def describe(self) -> ProviderMetadata:
         payload = self._load_json()
-        provider_id = self._provider_id or str(payload.get("provider_id") or self.path.stem)
+        provider_id = self._provider_id or str(
+            payload.get("provider_id") or self.path.stem
+        )
         version = str(payload.get("version", "unknown"))
         description = self._description or str(
-            payload.get("description") or f"Evidence provider loaded from {self.path.name}."
+            payload.get("description")
+            or f"Evidence provider loaded from {self.path.name}."
         )
         return ProviderMetadata(
             provider_id=provider_id,
@@ -90,30 +95,165 @@ class JsonFileEvidenceProvider(EvidenceProvider):
         return normalized
 
     def _load_json(self) -> dict[str, Any]:
+        if not self.path.exists():
+            logger.warning("Provider file not found: %s", self.path)
+            return {"entities": {}, "papers": [], "relationships": {}}
         with self.path.open("r", encoding="utf-8") as handle:
             return json.load(handle)
 
 
-class CuratedSeedProvider(JsonFileEvidenceProvider):
-    """Bundled curated evidence provider."""
+class OnlineProvider(EvidenceProvider):
+    """Base class for online API providers."""
 
-    def __init__(self) -> None:
-        super().__init__(
-            DATA_FILE,
-            provider_id="curated_seed",
-            description="Curated biomedical baseline dataset bundled with the repository.",
-            kind="bundled_seed",
+    def __init__(self):
+        self._enabled = True
+
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+
+class PubMedProviderWrapper(OnlineProvider):
+    """Wrapper for PubMed E-utilities API."""
+
+    def __init__(self):
+        super().__init__()
+        self._provider = None
+        try:
+            from github_viz.data_providers.pubmed_api import get_pubmed_provider
+
+            self._provider = get_pubmed_provider()
+        except ImportError as e:
+            logger.warning("PubMed provider not available: %s", e)
+            self._enabled = False
+
+    def describe(self) -> ProviderMetadata:
+        if self._provider:
+            return self._provider.describe()
+        return ProviderMetadata(
+            provider_id="pubmed",
+            version="unavailable",
+            description="PubMed API (not configured)",
+            kind="online_api",
+            location="https://pubmed.ncbi.nlm.nih.gov/",
         )
+
+    def load(self) -> dict[str, Any]:
+        if not self._enabled or not self._provider:
+            return {
+                "provider_id": "pubmed",
+                "version": "unavailable",
+                "entities": {},
+                "papers": [],
+                "relationships": {},
+            }
+        return self._provider.load()
+
+
+class ChEMBLProviderWrapper(OnlineProvider):
+    """Wrapper for ChEMBL API."""
+
+    def __init__(self):
+        super().__init__()
+        self._provider = None
+        try:
+            from github_viz.data_providers.chembl_api import get_chembl_provider
+
+            self._provider = get_chembl_provider()
+        except ImportError as e:
+            logger.warning("ChEMBL provider not available: %s", e)
+            self._enabled = False
+
+    def describe(self) -> ProviderMetadata:
+        if self._provider:
+            return self._provider.describe()
+        return ProviderMetadata(
+            provider_id="chembl",
+            version="unavailable",
+            description="ChEMBL API (not configured)",
+            kind="online_api",
+            location="https://www.ebi.ac.uk/chembl/",
+        )
+
+    def load(self) -> dict[str, Any]:
+        if not self._enabled or not self._provider:
+            return {
+                "provider_id": "chembl",
+                "version": "unavailable",
+                "entities": {},
+                "papers": [],
+                "relationships": {},
+            }
+        return self._provider.load()
+
+
+class OpenFDAProviderWrapper(OnlineProvider):
+    """Wrapper for OpenFDA API."""
+
+    def __init__(self):
+        super().__init__()
+        self._provider = None
+        try:
+            from github_viz.data_providers.openfda_api import get_openfda_provider
+
+            self._provider = get_openfda_provider()
+        except ImportError as e:
+            logger.warning("OpenFDA provider not available: %s", e)
+            self._enabled = False
+
+    def describe(self) -> ProviderMetadata:
+        if self._provider:
+            return self._provider.describe()
+        return ProviderMetadata(
+            provider_id="openfda",
+            version="unavailable",
+            description="OpenFDA API (not configured)",
+            kind="online_api",
+            location="https://api.fda.gov/",
+        )
+
+    def load(self) -> dict[str, Any]:
+        if not self._enabled or not self._provider:
+            return {
+                "provider_id": "openfda",
+                "version": "unavailable",
+                "entities": {},
+                "papers": [],
+                "relationships": {},
+            }
+        return self._provider.load()
 
 
 def build_provider_registry(settings: Settings) -> list[EvidenceProvider]:
     """Build the configured provider list for the current runtime."""
-    providers: list[EvidenceProvider] = [CuratedSeedProvider()]
+    providers: list[EvidenceProvider] = []
+
+    # Check for seed data file
+    from github_viz.analysis.graph import DATA_FILE
+
+    if DATA_FILE.exists():
+        providers.append(
+            JsonFileEvidenceProvider(
+                DATA_FILE,
+                provider_id="curated_seed",
+                description="Curated biomedical baseline dataset bundled with the repository.",
+                kind="bundled_seed",
+            )
+        )
+    else:
+        logger.info("No seed data file found - using online providers only")
+
+    # Add online providers (PubMed, ChEMBL, OpenFDA)
+    providers.append(PubMedProviderWrapper())
+    providers.append(ChEMBLProviderWrapper())
+    providers.append(OpenFDAProviderWrapper())
+
+    # Add custom provider files
     for raw_path in settings.extra_provider_paths:
         path = Path(raw_path)
         if not path.exists():
             continue
         providers.append(JsonFileEvidenceProvider(path))
+
     return providers
 
 
@@ -123,7 +263,10 @@ def dataset_versions(
     evidence_mode: str = "hybrid",
 ) -> list[dict[str, str]]:
     """Return metadata for providers participating in a given evidence mode."""
-    return [provider.describe().to_dict() for provider in active_providers(providers, evidence_mode=evidence_mode)]
+    return [
+        provider.describe().to_dict()
+        for provider in active_providers(providers, evidence_mode=evidence_mode)
+    ]
 
 
 def load_evidence_bundle(
@@ -135,16 +278,30 @@ def load_evidence_bundle(
     active = active_providers(providers, evidence_mode=evidence_mode)
     bundles = [provider.load() for provider in active]
     merged = merge_evidence_bundles(bundles)
-    merged["version"] = "+".join(bundle.get("version", "unknown") for bundle in bundles) or "unknown"
+    merged["version"] = (
+        "+".join(bundle.get("version", "unknown") for bundle in bundles) or "unknown"
+    )
     merged["providers"] = [provider.describe().to_dict() for provider in active]
     return merged
 
 
-def active_providers(providers: list[EvidenceProvider], *, evidence_mode: str) -> list[EvidenceProvider]:
-    """Resolve which providers participate for the current evidence mode."""
+def active_providers(
+    providers: list[EvidenceProvider], *, evidence_mode: str
+) -> list[EvidenceProvider]:
+    """Resolve which providers participate for the current evidence mode.
+
+    In offline mode, prefer local/overlay providers over online providers.
+    """
     if evidence_mode == "offline":
-        return providers[:1]
-    return providers
+        # Find local/seed providers first
+        local_providers = [
+            p for p in providers if p.describe().kind in ("bundled_seed", "json_file")
+        ]
+        if local_providers:
+            return local_providers
+        # Fallback to first provider if no local found
+        return providers[:1] if providers else []
+    return providers  # hybrid mode uses all providers
 
 
 def merge_evidence_bundles(bundles: list[dict[str, Any]]) -> dict[str, Any]:
@@ -164,7 +321,11 @@ def merge_evidence_bundles(bundles: list[dict[str, Any]]) -> dict[str, Any]:
             entity_seen.setdefault(bucket, set())
             target = merged["entities"].setdefault(bucket, [])
             for item in items:
-                key = str(item.get("id") or item.get("label") or json.dumps(item, sort_keys=True))
+                key = str(
+                    item.get("id")
+                    or item.get("label")
+                    or json.dumps(item, sort_keys=True)
+                )
                 if key in entity_seen[bucket]:
                     continue
                 entity_seen[bucket].add(key)

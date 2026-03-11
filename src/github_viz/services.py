@@ -6,7 +6,11 @@ from typing import Any
 
 from github_viz.analysis.graph import analyze_case
 from github_viz.analysis.stats import compute_stats
-from github_viz.providers import EvidenceProvider, dataset_versions, load_evidence_bundle
+from github_viz.providers import (
+    EvidenceProvider,
+    dataset_versions,
+    load_evidence_bundle,
+)
 
 POLICY_VERSION = "2026-03-09"
 INTENDED_USE = "clinician_research_assistant"
@@ -22,7 +26,17 @@ def run_analysis(
     ai_options: dict[str, Any] | None,
     providers: list[EvidenceProvider],
 ) -> dict[str, Any]:
-    evidence_bundle = load_evidence_bundle(providers, evidence_mode=evidence_mode)
+    # In hybrid mode, let analyze_case fetch from APIs directly
+    # In offline mode, load evidence bundle from providers
+    fetch_from_apis = evidence_mode == "hybrid"
+
+    if fetch_from_apis:
+        # Let analyze_case handle API fetching
+        evidence_bundle = None
+    else:
+        # Load from providers (offline mode)
+        evidence_bundle = load_evidence_bundle(providers, evidence_mode=evidence_mode)
+
     provider_versions = dataset_versions(providers, evidence_mode=evidence_mode)
     graph = analyze_case(
         patient_case=patient_case,
@@ -31,6 +45,7 @@ def run_analysis(
         with_ai=with_ai,
         ai_options=ai_options,
         evidence_bundle=evidence_bundle,
+        fetch_from_apis=fetch_from_apis,
     )
     graph.setdefault("meta", {})
     graph["meta"]["analysis_id"] = analysis_id
@@ -38,8 +53,12 @@ def run_analysis(
     graph["meta"]["policy"] = build_policy()
     graph["meta"]["dataset_versions"] = provider_versions
     graph["meta"]["warnings"] = build_warnings(graph)
-    graph["meta"]["source_provenance"] = build_source_provenance(graph, provider_versions)
-    graph["meta"]["input_quality"] = classify_input_quality(patient_case, graph["meta"]["warnings"])
+    graph["meta"]["source_provenance"] = build_source_provenance(
+        graph, provider_versions
+    )
+    graph["meta"]["input_quality"] = classify_input_quality(
+        patient_case, graph["meta"]["warnings"]
+    )
     stats = compute_stats(graph)
     return {
         "graph": graph,
@@ -63,7 +82,9 @@ def build_policy() -> dict[str, Any]:
 
 
 def build_warnings(graph: dict[str, Any]) -> list[str]:
-    patient = next((node for node in graph.get("nodes", []) if node.get("type") == "patient"), {})
+    patient = next(
+        (node for node in graph.get("nodes", []) if node.get("type") == "patient"), {}
+    )
     warnings: list[str] = []
     diagnoses = patient.get("meta", {}).get("diagnoses", [])
     biomarkers = patient.get("meta", {}).get("biomarkers", [])
@@ -71,15 +92,25 @@ def build_warnings(graph: dict[str, Any]) -> list[str]:
     provider_count = len(graph.get("meta", {}).get("dataset_versions", []))
 
     if not diagnoses:
-        warnings.append("No diagnosis was provided; downstream evidence matching will be limited.")
+        warnings.append(
+            "No diagnosis was provided; downstream evidence matching will be limited."
+        )
     if not biomarkers:
-        warnings.append("No biomarkers were provided; hypothesis ranking may be weaker.")
+        warnings.append(
+            "No biomarkers were provided; hypothesis ranking may be weaker."
+        )
     if hypothesis_count == 0:
-        warnings.append("No supported hypotheses were found in the currently configured evidence sources.")
+        warnings.append(
+            "No supported hypotheses were found in the currently configured evidence sources."
+        )
     if hypothesis_count > 0 and len(graph.get("nodes", [])) < 6:
-        warnings.append("Graph coverage is sparse for this case; review evidence provenance before use.")
+        warnings.append(
+            "Graph coverage is sparse for this case; review evidence provenance before use."
+        )
     if provider_count == 1:
-        warnings.append("Only the bundled curated evidence provider was used for this analysis.")
+        warnings.append(
+            "Only the bundled curated evidence provider was used for this analysis."
+        )
     return warnings
 
 
@@ -90,7 +121,9 @@ def build_source_provenance(
     paper_provider_index = {
         node.get("id"): {
             "provider": node.get("meta", {}).get("provider_id", "unknown"),
-            "dataset_version": _provider_version(node.get("meta", {}).get("provider_id", "unknown"), provider_versions),
+            "dataset_version": _provider_version(
+                node.get("meta", {}).get("provider_id", "unknown"), provider_versions
+            ),
         }
         for node in graph.get("nodes", [])
         if node.get("type") == "research_paper"
@@ -122,7 +155,10 @@ def build_source_provenance(
 
 
 def collect_hypotheses(graph: dict[str, Any]) -> list[dict[str, Any]]:
-    provenance_index = {item["hypothesis_id"]: item for item in graph.get("meta", {}).get("source_provenance", [])}
+    provenance_index = {
+        item["hypothesis_id"]: item
+        for item in graph.get("meta", {}).get("source_provenance", [])
+    }
     policy = graph.get("meta", {}).get("policy", build_policy())
     items = sorted(
         [node for node in graph.get("nodes", []) if node.get("type") == "hypothesis"],
@@ -133,7 +169,9 @@ def collect_hypotheses(graph: dict[str, Any]) -> list[dict[str, Any]]:
         item.setdefault("classification", classify_hypothesis(item))
         item.setdefault(
             "limitations",
-            build_hypothesis_limitations(item, graph.get("meta", {}).get("warnings", [])),
+            build_hypothesis_limitations(
+                item, graph.get("meta", {}).get("warnings", [])
+            ),
         )
         item.setdefault("score_components", build_score_components(item))
         item.setdefault("provenance", provenance_index.get(item.get("id"), {}))
@@ -174,7 +212,9 @@ def collect_evidence(graph: dict[str, Any]) -> list[dict[str, Any]]:
                 "evidence_count": len(papers),
                 "papers": papers,
                 "matched_entities": {
-                    "biomarker_overlap": hypothesis.get("meta", {}).get("biomarker_overlap", []),
+                    "biomarker_overlap": hypothesis.get("meta", {}).get(
+                        "biomarker_overlap", []
+                    ),
                     "disease": hypothesis.get("meta", {}).get("disease", ""),
                     "drug": hypothesis.get("meta", {}).get("drug", ""),
                 },
@@ -194,7 +234,9 @@ def classify_hypothesis(hypothesis: dict[str, Any]) -> str:
     return "insufficient_evidence"
 
 
-def build_hypothesis_limitations(hypothesis: dict[str, Any], warnings: list[str]) -> list[str]:
+def build_hypothesis_limitations(
+    hypothesis: dict[str, Any], warnings: list[str]
+) -> list[str]:
     limitations = list(warnings)
     if int(hypothesis.get("evidence_count", 0)) < 3:
         limitations.append("Supporting paper count is limited for this hypothesis.")

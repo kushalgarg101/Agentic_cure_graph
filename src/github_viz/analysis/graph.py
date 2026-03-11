@@ -14,7 +14,38 @@ from github_viz.analysis.parser import build_extraction_dictionary, parse_patien
 
 logger = logging.getLogger(__name__)
 
-DATA_FILE = pathlib.Path(__file__).resolve().parent.parent / "data" / "seed_biomedical_graph.json"
+DATA_FILE = (
+    pathlib.Path(__file__).resolve().parent.parent
+    / "data"
+    / "seed_biomedical_graph.json"
+)
+
+
+def get_empty_seed() -> dict:
+    """Return empty seed data structure when no seed file exists."""
+    return {
+        "version": "none",
+        "entities": {
+            "diseases": [],
+            "symptoms": [],
+            "biomarkers": [],
+            "drugs": [],
+            "genes": [],
+            "proteins": [],
+            "pathways": [],
+        },
+        "papers": [],
+        "relationships": {},
+    }
+
+
+def load_seed_data() -> dict:
+    """Load seed data from file, or return empty structure if not present."""
+    if not DATA_FILE.exists():
+        logger.warning("Seed data file not found at %s - using empty graph", DATA_FILE)
+        return get_empty_seed()
+    with DATA_FILE.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
 
 
 def analyze_case(
@@ -24,10 +55,37 @@ def analyze_case(
     with_ai: bool,
     ai_options: dict | None = None,
     evidence_bundle: dict | None = None,
+    fetch_from_apis: bool = True,
 ) -> dict:
-    """Analyze a patient case and return graph JSON consumed by API/UI."""
+    """Analyze a patient case and return graph JSON consumed by API/UI.
+
+    Args:
+        patient_case: Structured patient data
+        report_text: Optional free-text report
+        evidence_mode: "offline" or "hybrid"
+        with_ai: Whether to use AI enrichment
+        ai_options: Options for AI enrichment
+        evidence_bundle: Pre-loaded evidence (optional)
+        fetch_from_apis: Whether to fetch from real APIs (default True)
+    """
     started_at = time.monotonic()
-    seed = evidence_bundle or load_seed_data()
+
+    # If no evidence_bundle provided and hybrid mode, try to fetch from APIs
+    if not evidence_bundle and evidence_mode == "hybrid" and fetch_from_apis:
+        try:
+            from github_viz.data_providers.fetcher import get_evidence_fetcher
+
+            fetcher = get_evidence_fetcher()
+            fetched = fetcher.fetch_for_patient(patient_case)
+            evidence_bundle = fetched.to_dict()
+            logger.info("Fetched live evidence from APIs: %s", fetched.providers_used)
+        except Exception as e:
+            logger.warning("Failed to fetch from APIs, using empty: %s", e)
+            evidence_bundle = get_empty_seed()
+    else:
+        evidence_bundle = evidence_bundle or get_empty_seed()
+
+    seed = evidence_bundle
     extraction_dictionary = build_extraction_dictionary(seed["entities"])
     parsed_case = parse_patient_case(patient_case, report_text, extraction_dictionary)
 
@@ -56,15 +114,72 @@ def analyze_case(
     )
     nodes[patient_node.id] = patient_node
 
-    matched_diseases = _attach_patient_terms(nodes, links, patient_node.id, parsed_case.diagnoses, "disease", "has_disease", label_index)
-    matched_symptoms = _attach_patient_terms(nodes, links, patient_node.id, parsed_case.symptoms, "symptom", "has_symptom", label_index)
-    matched_biomarkers = _attach_patient_terms(nodes, links, patient_node.id, parsed_case.biomarkers, "biomarker", "has_biomarker", label_index)
-    matched_drugs = _attach_patient_terms(nodes, links, patient_node.id, parsed_case.medications, "drug", "takes_drug", label_index)
+    matched_diseases = _attach_patient_terms(
+        nodes,
+        links,
+        patient_node.id,
+        parsed_case.diagnoses,
+        "disease",
+        "has_disease",
+        label_index,
+    )
+    matched_symptoms = _attach_patient_terms(
+        nodes,
+        links,
+        patient_node.id,
+        parsed_case.symptoms,
+        "symptom",
+        "has_symptom",
+        label_index,
+    )
+    matched_biomarkers = _attach_patient_terms(
+        nodes,
+        links,
+        patient_node.id,
+        parsed_case.biomarkers,
+        "biomarker",
+        "has_biomarker",
+        label_index,
+    )
+    matched_drugs = _attach_patient_terms(
+        nodes,
+        links,
+        patient_node.id,
+        parsed_case.medications,
+        "drug",
+        "takes_drug",
+        label_index,
+    )
 
     matched_disease_labels = {entry.label for entry in matched_diseases.values()}
     matched_biomarker_labels = {entry.label for entry in matched_biomarkers.values()}
 
-    _attach_evidence_network(nodes, links, seed, matched_disease_labels, matched_biomarker_labels)
+    # Also include patient-reported diagnoses that may not have matched exactly
+    # but are still relevant for hypothesis generation
+    for disease_label in parsed_case.diagnoses:
+        # Add exact patient diagnosis
+        matched_disease_labels.add(disease_label)
+        dl_lower = disease_label.lower()
+        matched_disease_labels.add(dl_lower)
+
+        # Normalize: handle common variations
+        # "Parkinsons disease" -> base: "Parkinson"
+        # Handle trailing 's' (e.g., "Parkinsons" -> "Parkinson")
+        base_name = disease_label.replace("'", "").strip()
+        if base_name.lower().endswith(" disease"):
+            base_name = base_name[:-8].strip()
+        if base_name.lower().endswith("ns"):  # "Parkinsons" -> "Parkinson"
+            base_name = base_name[:-1]
+
+        # Add all common variations
+        matched_disease_labels.add(f"{base_name}'s disease")
+        matched_disease_labels.add(f"{base_name} disease")
+        matched_disease_labels.add(base_name)
+        matched_disease_labels.add(base_name.lower())
+
+    _attach_evidence_network(
+        nodes, links, seed, matched_disease_labels, matched_biomarker_labels
+    )
     ranked_hypotheses = _build_hypotheses(
         nodes,
         links,
@@ -75,7 +190,9 @@ def analyze_case(
         {entry.label for entry in matched_drugs.values()},
     )
 
-    patient_node.meta["observed_symptoms"] = [entry.label for entry in matched_symptoms.values()]
+    patient_node.meta["observed_symptoms"] = [
+        entry.label for entry in matched_symptoms.values()
+    ]
 
     ai_summary = {
         "enabled": with_ai,
@@ -127,11 +244,6 @@ def analyze_case(
     }
 
 
-def load_seed_data() -> dict:
-    with DATA_FILE.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
-
-
 def build_label_index(seed: dict) -> dict[str, dict]:
     index: dict[str, dict] = {}
     for type_name, items in seed.get("entities", {}).items():
@@ -144,7 +256,9 @@ def build_label_index(seed: dict) -> dict[str, dict]:
     return index
 
 
-def _attach_patient_terms(nodes, links, patient_id, items, node_type, relation_kind, label_index):
+def _attach_patient_terms(
+    nodes, links, patient_id, items, node_type, relation_kind, label_index
+):
     attached: dict[str, Node] = {}
     for item in items:
         entity = label_index.get(str(item).casefold())
@@ -161,11 +275,15 @@ def _attach_patient_terms(nodes, links, patient_id, items, node_type, relation_k
             )
         nodes.setdefault(node.id, node)
         attached[node.id] = nodes[node.id]
-        links.append(Link(source=patient_id, target=node.id, kind=relation_kind, weight=2))
+        links.append(
+            Link(source=patient_id, target=node.id, kind=relation_kind, weight=2)
+        )
     return attached
 
 
-def _attach_evidence_network(nodes, links, seed, matched_disease_labels, matched_biomarker_labels):
+def _attach_evidence_network(
+    nodes, links, seed, matched_disease_labels, matched_biomarker_labels
+):
     papers_by_id = {paper["id"]: paper for paper in seed.get("papers", [])}
     label_index = build_label_index(seed)
 
@@ -173,50 +291,115 @@ def _attach_evidence_network(nodes, links, seed, matched_disease_labels, matched
         if relation["disease"] not in matched_disease_labels:
             continue
         gene = _node_from_seed_entity(label_index[relation["gene"].casefold()], "gene")
-        disease = _node_from_seed_entity(label_index[relation["disease"].casefold()], "disease")
+        disease = _node_from_seed_entity(
+            label_index[relation["disease"].casefold()], "disease"
+        )
         nodes.setdefault(gene.id, gene)
         nodes.setdefault(disease.id, disease)
-        links.append(Link(source=gene.id, target=disease.id, kind="associated_with", evidence_ids=relation.get("papers", [])))
+        links.append(
+            Link(
+                source=gene.id,
+                target=disease.id,
+                kind="associated_with",
+                evidence_ids=relation.get("papers", []),
+            )
+        )
         _attach_papers(nodes, links, papers_by_id, relation.get("papers", []), gene.id)
 
     for relation in seed.get("relationships", {}).get("protein_pathway", []):
-        protein = _node_from_seed_entity(label_index[relation["protein"].casefold()], "protein")
-        pathway = _node_from_seed_entity(label_index[relation["pathway"].casefold()], "pathway")
+        protein = _node_from_seed_entity(
+            label_index[relation["protein"].casefold()], "protein"
+        )
+        pathway = _node_from_seed_entity(
+            label_index[relation["pathway"].casefold()], "pathway"
+        )
         nodes.setdefault(protein.id, protein)
         nodes.setdefault(pathway.id, pathway)
-        links.append(Link(source=protein.id, target=pathway.id, kind="involves_pathway", evidence_ids=relation.get("papers", [])))
-        _attach_papers(nodes, links, papers_by_id, relation.get("papers", []), pathway.id)
+        links.append(
+            Link(
+                source=protein.id,
+                target=pathway.id,
+                kind="involves_pathway",
+                evidence_ids=relation.get("papers", []),
+            )
+        )
+        _attach_papers(
+            nodes, links, papers_by_id, relation.get("papers", []), pathway.id
+        )
 
     for relation in seed.get("relationships", {}).get("pathway_disease", []):
         if relation["disease"] not in matched_disease_labels:
             continue
-        pathway = _node_from_seed_entity(label_index[relation["pathway"].casefold()], "pathway")
-        disease = _node_from_seed_entity(label_index[relation["disease"].casefold()], "disease")
+        pathway = _node_from_seed_entity(
+            label_index[relation["pathway"].casefold()], "pathway"
+        )
+        disease = _node_from_seed_entity(
+            label_index[relation["disease"].casefold()], "disease"
+        )
         nodes.setdefault(pathway.id, pathway)
         nodes.setdefault(disease.id, disease)
-        links.append(Link(source=pathway.id, target=disease.id, kind="associated_with", evidence_ids=relation.get("papers", [])))
-        _attach_papers(nodes, links, papers_by_id, relation.get("papers", []), pathway.id)
+        links.append(
+            Link(
+                source=pathway.id,
+                target=disease.id,
+                kind="associated_with",
+                evidence_ids=relation.get("papers", []),
+            )
+        )
+        _attach_papers(
+            nodes, links, papers_by_id, relation.get("papers", []), pathway.id
+        )
 
     for relation in seed.get("relationships", {}).get("biomarker_pathway", []):
         if relation["biomarker"] not in matched_biomarker_labels:
             continue
-        biomarker = _node_from_seed_entity(label_index[relation["biomarker"].casefold()], "biomarker")
-        pathway = _node_from_seed_entity(label_index[relation["pathway"].casefold()], "pathway")
+        biomarker = _node_from_seed_entity(
+            label_index[relation["biomarker"].casefold()], "biomarker"
+        )
+        pathway = _node_from_seed_entity(
+            label_index[relation["pathway"].casefold()], "pathway"
+        )
         nodes.setdefault(biomarker.id, biomarker)
         nodes.setdefault(pathway.id, pathway)
-        links.append(Link(source=biomarker.id, target=pathway.id, kind="mentions", evidence_ids=relation.get("papers", [])))
-        _attach_papers(nodes, links, papers_by_id, relation.get("papers", []), biomarker.id)
+        links.append(
+            Link(
+                source=biomarker.id,
+                target=pathway.id,
+                kind="mentions",
+                evidence_ids=relation.get("papers", []),
+            )
+        )
+        _attach_papers(
+            nodes, links, papers_by_id, relation.get("papers", []), biomarker.id
+        )
 
     for relation in seed.get("relationships", {}).get("drug_target", []):
         drug = _node_from_seed_entity(label_index[relation["drug"].casefold()], "drug")
-        protein = _node_from_seed_entity(label_index[relation["protein"].casefold()], "protein")
+        protein = _node_from_seed_entity(
+            label_index[relation["protein"].casefold()], "protein"
+        )
         nodes.setdefault(drug.id, drug)
         nodes.setdefault(protein.id, protein)
-        links.append(Link(source=drug.id, target=protein.id, kind="targets", evidence_ids=relation.get("papers", [])))
+        links.append(
+            Link(
+                source=drug.id,
+                target=protein.id,
+                kind="targets",
+                evidence_ids=relation.get("papers", []),
+            )
+        )
         _attach_papers(nodes, links, papers_by_id, relation.get("papers", []), drug.id)
 
 
-def _build_hypotheses(nodes, links, seed, patient_node, matched_disease_labels, matched_biomarker_labels, matched_drug_labels):
+def _build_hypotheses(
+    nodes,
+    links,
+    seed,
+    patient_node,
+    matched_disease_labels,
+    matched_biomarker_labels,
+    matched_drug_labels,
+):
     label_index = build_label_index(seed)
     papers_by_id = {paper["id"]: paper for paper in seed.get("papers", [])}
     ranked: list[Node] = []
@@ -224,17 +407,26 @@ def _build_hypotheses(nodes, links, seed, patient_node, matched_disease_labels, 
     for relation in seed.get("relationships", {}).get("drug_hypotheses", []):
         if relation["disease"] not in matched_disease_labels:
             continue
-        drug_entity = label_index[relation["drug"].casefold()]
-        disease_entity = label_index[relation["disease"].casefold()]
+
+        drug_entity = label_index.get(relation["drug"].casefold())
+        disease_entity = label_index.get(relation["disease"].casefold())
+
+        if not drug_entity or not disease_entity:
+            continue
+
         drug_node = _node_from_seed_entity(drug_entity, "drug")
         disease_node = _node_from_seed_entity(disease_entity, "disease")
         nodes.setdefault(drug_node.id, drug_node)
         nodes.setdefault(disease_node.id, disease_node)
 
-        biomarker_overlap = sorted(set(relation.get("biomarker_matches", [])) & matched_biomarker_labels)
+        biomarker_overlap = sorted(
+            set(relation.get("biomarker_matches", [])) & matched_biomarker_labels
+        )
         paper_ids = relation.get("papers", [])
         score = _score_hypothesis(relation, biomarker_overlap, matched_drug_labels)
-        hypothesis_id = f"hypothesis:{_slug(relation['drug'])}:{_slug(relation['disease'])}"
+        hypothesis_id = (
+            f"hypothesis:{_slug(relation['drug'])}:{_slug(relation['disease'])}"
+        )
         rationale = (
             f"Matched disease {relation['disease']} with {len(paper_ids)} supporting papers "
             f"and {len(biomarker_overlap)} biomarker overlaps."
@@ -247,7 +439,8 @@ def _build_hypotheses(nodes, links, seed, patient_node, matched_disease_labels, 
             summary=relation["mechanism"],
             group="hypothesis",
             size=5,
-            complexity=len(relation.get("pathways", [])) + len(relation.get("genes", [])),
+            complexity=len(relation.get("pathways", []))
+            + len(relation.get("genes", [])),
             score=score,
             evidence_count=len(paper_ids),
             meta={
@@ -266,19 +459,59 @@ def _build_hypotheses(nodes, links, seed, patient_node, matched_disease_labels, 
         nodes[hypothesis_id] = hypothesis_node
         ranked.append(hypothesis_node)
 
-        links.append(Link(source=patient_node.id, target=hypothesis_id, kind="candidate_treatment_for", weight=2, evidence_ids=paper_ids))
-        links.append(Link(source=hypothesis_id, target=drug_node.id, kind="references_drug", evidence_ids=paper_ids))
-        links.append(Link(source=hypothesis_id, target=disease_node.id, kind="candidate_treatment_for", evidence_ids=paper_ids))
+        links.append(
+            Link(
+                source=patient_node.id,
+                target=hypothesis_id,
+                kind="candidate_treatment_for",
+                weight=2,
+                evidence_ids=paper_ids,
+            )
+        )
+        links.append(
+            Link(
+                source=hypothesis_id,
+                target=drug_node.id,
+                kind="references_drug",
+                evidence_ids=paper_ids,
+            )
+        )
+        links.append(
+            Link(
+                source=hypothesis_id,
+                target=disease_node.id,
+                kind="candidate_treatment_for",
+                evidence_ids=paper_ids,
+            )
+        )
 
         for pathway_name in relation.get("pathways", []):
-            pathway_node = _node_from_seed_entity(label_index[pathway_name.casefold()], "pathway")
-            nodes.setdefault(pathway_node.id, pathway_node)
-            links.append(Link(source=hypothesis_id, target=pathway_node.id, kind="mentions", evidence_ids=paper_ids))
+            pathway_entity = label_index.get(pathway_name.casefold())
+            if pathway_entity:
+                pathway_node = _node_from_seed_entity(pathway_entity, "pathway")
+                nodes.setdefault(pathway_node.id, pathway_node)
+                links.append(
+                    Link(
+                        source=hypothesis_id,
+                        target=pathway_node.id,
+                        kind="mentions",
+                        evidence_ids=paper_ids,
+                    )
+                )
 
         for gene_name in relation.get("genes", []):
-            gene_node = _node_from_seed_entity(label_index[gene_name.casefold()], "gene")
-            nodes.setdefault(gene_node.id, gene_node)
-            links.append(Link(source=hypothesis_id, target=gene_node.id, kind="mentions", evidence_ids=paper_ids))
+            gene_entity = label_index.get(gene_name.casefold())
+            if gene_entity:
+                gene_node = _node_from_seed_entity(gene_entity, "gene")
+                nodes.setdefault(gene_node.id, gene_node)
+                links.append(
+                    Link(
+                        source=hypothesis_id,
+                        target=gene_node.id,
+                        kind="mentions",
+                        evidence_ids=paper_ids,
+                    )
+                )
 
         for paper_id in paper_ids:
             _attach_papers(nodes, links, papers_by_id, [paper_id], hypothesis_id)
@@ -309,7 +542,14 @@ def _attach_papers(nodes, links, papers_by_id, paper_ids, source_id):
             },
         )
         nodes.setdefault(node.id, node)
-        links.append(Link(source=source_id, target=node.id, kind="supported_by", evidence_ids=[paper_id]))
+        links.append(
+            Link(
+                source=source_id,
+                target=node.id,
+                kind="supported_by",
+                evidence_ids=[paper_id],
+            )
+        )
 
 
 def _node_from_seed_entity(entity: dict, node_type: str) -> Node:
@@ -324,7 +564,9 @@ def _node_from_seed_entity(entity: dict, node_type: str) -> Node:
     )
 
 
-def _score_hypothesis(relation: dict, biomarker_overlap: list[str], matched_drug_labels: set[str]) -> float:
+def _score_hypothesis(
+    relation: dict, biomarker_overlap: list[str], matched_drug_labels: set[str]
+) -> float:
     score = 0.35
     score += min(0.24, len(relation.get("papers", [])) * 0.08)
     score += min(0.18, len(biomarker_overlap) * 0.09)
@@ -340,7 +582,9 @@ def _dedupe_links_in_place(links: list[Link]) -> None:
         key = (link.source, link.target, link.kind)
         if key in merged:
             merged[key].weight += link.weight
-            merged[key].evidence_ids = sorted(set(merged[key].evidence_ids + link.evidence_ids))
+            merged[key].evidence_ids = sorted(
+                set(merged[key].evidence_ids + link.evidence_ids)
+            )
         else:
             merged[key] = Link(
                 source=link.source,
