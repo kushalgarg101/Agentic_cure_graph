@@ -1,100 +1,92 @@
-"""MCP Protocol Server — serves Cure Graph tools over HTTP.
+"""MCP Protocol Server for Agentic Cure Graph.
 
-This is a lightweight JSON-RPC–style server that exposes the MCP
-tool definitions from ``tools.py``. AI agents connect to this
-server to call Cure Graph tools.
+This server exposes Cure Graph tools using the official MCP SDK.
+Can run over stdio (for local AI tools) or HTTP (for remote clients).
 """
 
 from __future__ import annotations
 
-import json
 import logging
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
-from mcp_server.tools import MCP_TOOLS
+from mcp_server.tools import create_mcp_server
 
 logger = logging.getLogger(__name__)
 
 
-def create_mcp_app() -> FastAPI:
-    """Create the MCP FastAPI application."""
+def create_mcp_app():
+    """Create FastAPI-compatible app with MCP over SSE."""
+    from fastapi import FastAPI
+    from fastapi.responses import JSONResponse
+    from starlette.routing import Route
+    from starlette.applications import Starlette
+    from starlette.responses import PlainTextResponse
+    from mcp.server.sse import SseServerTransport
 
-    app = FastAPI(
-        title="Agentic Cure Graph — MCP Server",
-        version="0.4.0",
-        description="Model Context Protocol server exposing Cure Graph tools for AI agents.",
+    mcp_server = create_mcp_server()
+    sse_transport = SseServerTransport("/messages/")
+
+    async def handle_sse(request):
+        await sse_transport.handle(request, mcp_server)
+
+    async def handle_messages(request):
+        await sse_transport.handle(request, mcp_server)
+
+    starlette_app = Starlette(
+        debug=True,
+        routes=[
+            Route("/sse", endpoint=handle_sse),
+            Route("/messages/", endpoint=handle_messages, methods=["POST"]),
+        ],
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+    app = FastAPI(
+        title="Agentic Cure Graph - MCP Server",
+        version="1.0.0",
+        description="Model Context Protocol server for Cure Graph tools",
     )
 
     @app.get("/")
     def root():
         return {
             "name": "Agentic Cure Graph MCP Server",
-            "version": "0.4.0",
+            "version": "1.0.0",
             "protocol": "mcp",
-            "tools": [
-                {"name": t["name"], "description": t["description"]}
-                for t in MCP_TOOLS
-            ],
+            "endpoints": {
+                "sse": "/sse",
+                "messages": "/messages/",
+            },
+            "description": "Connect MCP clients to /sse for tool access",
         }
-
-    @app.get("/tools")
-    def list_tools():
-        """List available MCP tools with their schemas."""
-        return {
-            "tools": [
-                {
-                    "name": t["name"],
-                    "description": t["description"],
-                    "parameters": t["parameters"],
-                }
-                for t in MCP_TOOLS
-            ]
-        }
-
-    @app.post("/call")
-    async def call_tool(request: Request):
-        """Call an MCP tool by name with given arguments.
-
-        Request body:
-            { "tool": "tool_name", "arguments": { ... } }
-        """
-        body = await request.json()
-        tool_name = body.get("tool")
-        arguments = body.get("arguments", {})
-
-        if not tool_name:
-            raise HTTPException(status_code=400, detail="Missing 'tool' field")
-
-        # Find the tool
-        tool_def = next((t for t in MCP_TOOLS if t["name"] == tool_name), None)
-        if tool_def is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Tool '{tool_name}' not found. Available: {[t['name'] for t in MCP_TOOLS]}",
-            )
-
-        handler = tool_def["handler"]
-
-        try:
-            logger.info("MCP call: %s(%s)", tool_name, json.dumps(arguments)[:200])
-            result = handler(**arguments)
-            return {"tool": tool_name, "status": "success", "result": result}
-        except Exception as exc:
-            logger.exception("MCP tool call failed: %s", tool_name)
-            raise HTTPException(status_code=500, detail=str(exc))
 
     @app.get("/health")
     def health():
-        return {"status": "ok", "protocol": "mcp", "tools_count": len(MCP_TOOLS)}
+        return {"status": "ok", "mcp": "available"}
+
+    app.mount("/mcp", starlette_app)
 
     return app
+
+
+def run_mcp_stdio():
+    """Run MCP server over stdio (for local AI tool integration)."""
+    from mcp_server.tools import run_mcp_server
+    import asyncio
+
+    asyncio.run(run_mcp_server())
+
+
+def run_mcp_http(host: str = "127.0.0.1", port: int = 8001):
+    """Run MCP server over HTTP with SSE."""
+    app = create_mcp_app()
+    uvicorn.run(app, host=host, port=port)
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--http":
+        run_mcp_http()
+    else:
+        run_mcp_stdio()
