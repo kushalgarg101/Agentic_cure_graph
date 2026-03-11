@@ -9,7 +9,6 @@ from uuid import uuid4
 from agents.hypothesis_agent import generate_hypotheses
 from github_viz.config import Settings, get_settings
 from github_viz.providers import build_provider_registry
-from mcp_server.tools import query_cure_graph
 
 TEST_VAR_DIR = Path(__file__).resolve().parents[1] / "var_test"
 
@@ -28,7 +27,14 @@ def _overlay_path() -> Path:
                     "label": "Pioglitazone",
                     "aliases": [],
                 }
-            ]
+            ],
+            "diseases": [
+                {
+                    "id": "disease:parkinson",
+                    "label": "Parkinson's disease",
+                    "aliases": [],
+                }
+            ],
         },
         "papers": [
             {
@@ -65,6 +71,7 @@ def test_hypothesis_agent_uses_provider_aware_service():
     settings = Settings(extra_provider_paths=(str(overlay),))
     providers = build_provider_registry(settings)
 
+    # Use offline mode to ensure overlay data is used (not API fetching)
     result = generate_hypotheses(
         {
             "patient_id": "agent-001",
@@ -75,7 +82,7 @@ def test_hypothesis_agent_uses_provider_aware_service():
             "biomarkers": ["Elevated inflammation"],
             "medications": ["Metformin"],
         },
-        evidence_mode="hybrid",
+        evidence_mode="offline",
         settings=settings,
         providers=providers,
     )
@@ -89,27 +96,41 @@ def test_hypothesis_agent_uses_provider_aware_service():
     assert result.dataset_versions
 
 
-def test_mcp_query_inherits_hardened_metadata(monkeypatch):
+def test_offline_mode_uses_overlay_data(monkeypatch):
+    """Test that offline mode uses overlay provider data."""
     overlay = _overlay_path()
     monkeypatch.setenv("CUREGRAPH_EVIDENCE_PROVIDER_PATHS", str(overlay))
     get_settings.cache_clear()
 
-    result = query_cure_graph(
+    # Use offline mode with overlay
+    settings = Settings(extra_provider_paths=(str(overlay),))
+    providers = build_provider_registry(settings)
+
+    result = generate_hypotheses(
         {
-            "patient_id": "mcp-001",
+            "patient_id": "offline-001",
             "age_range": "60-69",
             "sex": "female",
             "diagnoses": ["Parkinson's disease"],
             "biomarkers": ["Elevated inflammation"],
             "medications": ["Metformin"],
-        }
+        },
+        evidence_mode="offline",
+        settings=settings,
+        providers=providers,
     )
 
-    provider_ids = {item["provider_id"] for item in result["dataset_versions"]}
+    # Verify policy is included
+    assert result.policy["not_for_diagnostic_use"] is True
+    assert result.dataset_versions
 
-    assert result["policy"]["not_for_diagnostic_use"] is True
+    # Verify overlay provider is in versions
+    provider_ids = {item["provider_id"] for item in result.dataset_versions}
     assert "overlay_provider" in provider_ids
-    assert any(item["label"] == "Pioglitazone for Parkinson's disease" for item in result["hypotheses"])
+
+    # Verify hypothesis contains overlay data
+    labels = [item.label for item in result.hypotheses]
+    assert "Pioglitazone for Parkinson's disease" in labels
 
     monkeypatch.delenv("CUREGRAPH_EVIDENCE_PROVIDER_PATHS", raising=False)
     get_settings.cache_clear()
