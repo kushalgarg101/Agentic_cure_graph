@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Microscope, ArrowRight, BookOpen, FlaskConical, Bot, Activity } from 'lucide-react';
 import './HypothesisPanel.css';
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 export default function HypothesisPanel({ hypotheses, patientSummary }) {
     const [enrichingId, setEnrichingId] = useState(null);

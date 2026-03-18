@@ -1,321 +1,390 @@
-/* Update the container */
+/* ── Input Panel Container ── */
 .input-panel {
     display: flex;
     flex-direction: column;
-    padding: 24px;
     height: 100%;
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-    background: linear-gradient(180deg, rgba(11, 15, 25, 0.8) 0%, rgba(11, 15, 25, 0.4) 100%);
-    border-radius: 0;
-    position: relative;
-    overflow: hidden;
+    padding: 20px;
+    background: linear-gradient(180deg, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.6) 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
-/* Header styling */
-.panel-header {
+/* ── Header ── */
+.ip-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 28px;
+    gap: 12px;
 }
 
-.icon-wrapper {
-    background: rgba(0, 229, 255, 0.1);
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
-}
-
-.icon-cyan {
+.ip-header-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(0, 229, 255, 0.08);
+    border: 1px solid rgba(0, 229, 255, 0.15);
     color: var(--acc-cyan);
+    flex-shrink: 0;
 }
 
-.panel-header h2 {
-    font-size: 1.3rem;
+.ip-header-text h2 {
+    font-size: 1.1rem;
     font-weight: 700;
-    margin: 0 0 4px 0;
-    background: linear-gradient(90deg, #fff, #a0aec0);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #fff;
+    margin: 0;
+    line-height: 1.3;
 }
 
-.subtitle-badge {
-    font-size: 0.65rem;
+.ip-header-sub {
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--acc-cyan);
-    background: rgba(0, 229, 255, 0.1);
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(0, 229, 255, 0.2);
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
 }
 
-/* Form */
-.input-form {
+/* ── Divider ── */
+.ip-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    margin: 16px 0;
+}
+
+/* ── Form ── */
+.ip-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
     flex-grow: 1;
+    min-height: 0;
 }
 
-.form-header {
+/* ── Section ── */
+.ip-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ip-section-grow {
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.ip-section-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.input-form label {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
+.ip-section-label {
+    font-size: 0.7rem;
     font-weight: 600;
-}
-
-/* Textarea wrapper with scan line effect */
-.textarea-wrapper {
-    position: relative;
-    flex-grow: 1;
-    min-height: 250px;
-}
-
-.input-form textarea {
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 18px;
-    color: #a0aec0;
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    resize: none;
-    transition: all 0.3s ease;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.input-form textarea:focus {
-    outline: none;
-    border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.1);
-    color: #fff;
-}
-
-/* Example Pills */
-.example-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.example-label {
-    font-size: 0.75rem;
-    color: var(--text-dim);
-    margin-right: 4px;
-}
-
-.pill-btn {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    padding: 4px 12px;
-    border-radius: 16px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.pill-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Button enhancements */
-.init-btn {
-    height: 52px;
-    font-size: 1rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.2);
-    margin-top: auto;
-}
-
-.init-btn .icon-glow {
-    color: #fff;
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
-}
-
-/* Footer status */
-.panel-footer {
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.75rem;
-    color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 1.4px;
+    color: var(--text-dim);
 }
 
-.health-dot {
-    width: 6px;
-    height: 6px;
-    background-color: var(--acc-green);
-    border-radius: 50%;
-    box-shadow: 0 0 8px var(--acc-green);
-    animation: blink 2s infinite;
-}
-
-@keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.4;
-    }
-}
-
-.spinner {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-/* --- New Structured Form Styles --- */
-
-.form-row {
+/* ── Row (Demographics) ── */
+.ip-row {
     display: flex;
-    gap: 16px;
+    gap: 12px;
 }
 
-.form-group {
+.ip-field {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
-.form-group.half {
-    flex: 1;
+.ip-field label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
-.flex-grow {
-    flex-grow: 1;
-}
-
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group select {
+/* ── Inputs ── */
+.ip-field input,
+.ip-field select {
     width: 100%;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 12px;
     color: #fff;
     font-family: var(--font-base);
-    font-size: 0.9rem;
-    transition: all 0.2s;
+    font-size: 0.88rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.form-group input:focus,
-.form-group select:focus {
+.ip-field input::placeholder {
+    color: var(--text-dim);
+}
+
+.ip-field input:focus,
+.ip-field select:focus {
     outline: none;
-    border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.1);
+    border-color: rgba(0, 229, 255, 0.35);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.06);
 }
 
-.form-group select option {
+.ip-field select option {
     background: var(--bg-color);
     color: #fff;
 }
 
-.symptom-input-group {
+/* ── Symptom Input ── */
+.ip-symptom-input-row {
     display: flex;
     gap: 8px;
 }
 
-.add-btn {
-    background: rgba(0, 229, 255, 0.1);
-    border: 1px solid rgba(0, 229, 255, 0.3);
-    color: var(--acc-cyan);
+.ip-symptom-input-row input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 8px;
-    width: 40px;
+    padding: 9px 12px;
+    color: #fff;
+    font-family: var(--font-base);
+    font-size: 0.88rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ip-symptom-input-row input::placeholder {
+    color: var(--text-dim);
+}
+
+.ip-symptom-input-row input:focus {
+    outline: none;
+    border-color: rgba(0, 229, 255, 0.35);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.06);
+}
+
+.ip-add-btn {
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: rgba(0, 229, 255, 0.06);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 8px;
+    color: var(--acc-cyan);
     cursor: pointer;
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
-.add-btn:hover:not(:disabled) {
-    background: rgba(0, 229, 255, 0.2);
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+.ip-add-btn:hover:not(:disabled) {
+    background: rgba(0, 229, 255, 0.14);
+    border-color: rgba(0, 229, 255, 0.35);
 }
 
-.symptom-chips {
+.ip-add-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ── Chips ── */
+.ip-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 4px;
 }
 
-.chip {
+.ip-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(255, 176, 32, 0.15);
-    border: 1px solid rgba(255, 176, 32, 0.3);
+    gap: 5px;
+    background: rgba(255, 176, 32, 0.08);
+    border: 1px solid rgba(255, 176, 32, 0.2);
     color: var(--acc-amber);
     padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.8rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 500;
 }
 
-.chip-remove {
+.ip-chip-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: inherit;
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.5;
+    padding: 0;
+    transition: opacity 0.15s;
 }
 
-.chip-remove:hover {
+.ip-chip-x:hover {
     opacity: 1;
 }
 
-.textarea-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2px;
-}
-
-.upload-btn {
+/* ── Textarea ── */
+.ip-upload-btn {
     display: flex;
     align-items: center;
     gap: 4px;
     background: none;
     border: none;
-    color: var(--text-muted);
-    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    font-family: var(--font-base);
     cursor: pointer;
     transition: color 0.2s;
+    padding: 0;
 }
 
-.upload-btn:hover {
+.ip-upload-btn:hover {
     color: var(--acc-cyan);
 }
 
-.textarea-group textarea {
-    min-height: 120px;
+.ip-upload-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+.ip-textarea {
+    width: 100%;
+    flex-grow: 1;
+    min-height: 100px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--text-muted);
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    resize: none;
+    transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.ip-textarea::placeholder {
+    color: var(--text-dim);
+}
+
+.ip-textarea:focus {
+    outline: none;
+    border-color: rgba(0, 229, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.05);
+    color: var(--text-main);
+}
+
+/* ── Examples ── */
+.ip-examples {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.ip-examples-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.ip-examples-pills {
+    display: flex;
+    gap: 6px;
+}
+
+.ip-pill {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-family: var(--font-base);
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.ip-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Submit Button ── */
+.ip-submit {
+    width: 100%;
+    height: 46px;
+    margin-top: 16px;
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.05) 100%);
+    border: 1px solid rgba(0, 229, 255, 0.35);
+    color: var(--acc-cyan);
+    font-family: var(--font-base);
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.25s;
+}
+
+.ip-submit:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.25) 0%, rgba(0, 229, 255, 0.1) 100%);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.ip-submit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.ip-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.ip-submit-loading {
+    animation: agenticPulse 2s infinite;
+}
+
+.ip-spinner {
+    animation: ipSpin 1s linear infinite;
+}
+
+@keyframes ipSpin {
+    100% { transform: rotate(360deg); }
+}
+
+/* ── Footer ── */
+.ip-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.ip-footer-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--acc-green);
+    box-shadow: 0 0 6px var(--acc-green);
+    animation: ipBlink 2.5s ease-in-out infinite;
+}
+
+@keyframes ipBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
 }

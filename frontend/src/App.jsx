@@ -4,7 +4,7 @@ import GraphCanvas from './components/GraphCanvas';
 import HypothesisPanel from './components/HypothesisPanel';
 import './App.css';
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 function App() {
   const [sessionId, setSessionId] = useState(null);
@@ -181,33 +181,10 @@ function App() {
 
   // ── render ──────────────────────────────────────────────────────────
 
-  // HERO VIEW (Before analysis)
-  if (!sessionId) {
-    return (
-      <div className="app-container hero-mode">
-        <div className="hero-content">
-          <div className="hero-text">
-            <h1>Agentic Cure Graph</h1>
-            <p>Patient-driven biomedical reasoning system for clinical hypothesis generation.</p>
-          </div>
-          <div className="hero-input-wrapper">
-            <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} heroMode={true} />
-            {error && (
-              <div className="error-banner">
-                <p>{error}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // DASHBOARD VIEW (After analysis)
   return (
     <div className="app-container dashboard-mode">
       <div className="sidebar-left">
-        <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} heroMode={false} />
+        <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} />
         {error && (
           <div className="error-banner">
             <p>{error}</p>

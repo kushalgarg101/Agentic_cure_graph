@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Bot, Activity, BrainCircuit, Sparkles, FileText, Plus, X, Upload } from 'lucide-react';
+import { BrainCircuit, Sparkles, Activity, Plus, X, Upload } from 'lucide-react';
 import './InputPanel.css';
 
 const EXAMPLES = {
@@ -17,7 +17,7 @@ const EXAMPLES = {
   }
 };
 
-export default function InputPanel({ onSubmit, isProcessing, heroMode }) {
+export default function InputPanel({ onSubmit, isProcessing }) {
   const [age, setAge] = useState("");
   const [sex, setSex] = useState("Unknown");
   const [report, setReport] = useState("");
@@ -60,7 +60,6 @@ export default function InputPanel({ onSubmit, isProcessing, heroMode }) {
     e.preventDefault();
     if (!report.trim() && symptoms.length === 0) return;
 
-    // Construct the unstructured text the backend expects
     let combined = [];
     if (age) combined.push(`Age: ${age}`);
     if (sex !== "Unknown") combined.push(`Sex: ${sex}`);
@@ -71,77 +70,95 @@ export default function InputPanel({ onSubmit, isProcessing, heroMode }) {
   };
 
   return (
-    <div className={`input-panel glass-panel ${heroMode ? 'hero' : 'sidebar'}`}>
-      <div className="panel-header">
-        <div className="icon-wrapper">
-          <BrainCircuit className="icon-cyan" size={heroMode ? 36 : 28} />
+    <div className="input-panel">
+      {/* Header */}
+      <div className="ip-header">
+        <div className="ip-header-icon">
+          <BrainCircuit size={20} />
         </div>
-        <div>
-          <h2>Patient Intelligence</h2>
-          <span className="subtitle-badge">Agentic Extraction</span>
+        <div className="ip-header-text">
+          <h2>Patient Input</h2>
+          <span className="ip-header-sub">Structured extraction</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="input-form">
+      <div className="ip-divider" />
 
-        <div className="form-row">
-          <div className="form-group half">
-            <label>Age</label>
-            <input
-              type="number"
-              value={age}
-              onChange={e => setAge(e.target.value)}
-              placeholder="e.g. 65"
-              disabled={isProcessing}
-            />
-          </div>
-          <div className="form-group half">
-            <label>Sex</label>
-            <select value={sex} onChange={e => setSex(e.target.value)} disabled={isProcessing}>
-              <option value="Unknown">Unknown</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="ip-form">
+
+        {/* Demographics Section */}
+        <div className="ip-section">
+          <label className="ip-section-label">Demographics</label>
+          <div className="ip-row">
+            <div className="ip-field">
+              <label>Age</label>
+              <input
+                type="number"
+                value={age}
+                onChange={e => setAge(e.target.value)}
+                placeholder="e.g. 65"
+                disabled={isProcessing}
+              />
+            </div>
+            <div className="ip-field">
+              <label>Sex</label>
+              <select value={sex} onChange={e => setSex(e.target.value)} disabled={isProcessing}>
+                <option value="Unknown">Unknown</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="form-group">
-          <label>Symptoms</label>
-          <div className="symptom-input-group">
+        <div className="ip-divider" />
+
+        {/* Symptoms Section */}
+        <div className="ip-section">
+          <label className="ip-section-label">Symptoms</label>
+          <div className="ip-symptom-input-row">
             <input
               type="text"
               value={symptomInput}
               onChange={e => setSymptomInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSymptomAdd(e)}
-              placeholder="Add symptom and press Enter..."
+              placeholder="Type and press Enter..."
               disabled={isProcessing}
             />
-            <button type="button" className="add-btn" onClick={handleSymptomAdd} disabled={isProcessing}>
+            <button type="button" className="ip-add-btn" onClick={handleSymptomAdd} disabled={isProcessing}>
               <Plus size={16} />
             </button>
           </div>
           {symptoms.length > 0 && (
-            <div className="symptom-chips">
+            <div className="ip-chips">
               {symptoms.map(s => (
-                <span key={s} className="chip">
-                  {s} <X size={12} className="chip-remove" onClick={() => removeSymptom(s)} />
+                <span key={s} className="ip-chip">
+                  {s}
+                  <button type="button" className="ip-chip-x" onClick={() => removeSymptom(s)}>
+                    <X size={12} />
+                  </button>
                 </span>
               ))}
             </div>
           )}
         </div>
 
-        <div className="form-group flex-grow textarea-group">
-          <div className="textarea-header">
-            <label>Clinical Notes</label>
+        <div className="ip-divider" />
+
+        {/* Clinical Notes Section */}
+        <div className="ip-section ip-section-grow">
+          <div className="ip-section-head">
+            <label className="ip-section-label">Clinical Notes</label>
             <button
               type="button"
-              className="upload-btn"
+              className="ip-upload-btn"
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing}
             >
-              <Upload size={14} /> Upload TXT
+              <Upload size={13} />
+              <span>Upload .txt</span>
             </button>
             <input
               type="file"
@@ -154,40 +171,50 @@ export default function InputPanel({ onSubmit, isProcessing, heroMode }) {
           <textarea
             value={report}
             onChange={(e) => setReport(e.target.value)}
-            placeholder="Enter patient narrative, diagnosis, medications, or lab results..."
+            placeholder="Patient narrative, diagnosis, medications, lab results..."
             disabled={isProcessing}
             spellCheck="false"
+            className="ip-textarea"
           />
         </div>
 
-        <div className="example-actions">
-          <span className="example-label">Examples:</span>
-          <button type="button" className="pill-btn" onClick={() => loadExample('parkinsons')}>Parkinson's</button>
-          <button type="button" className="pill-btn" onClick={() => loadExample('alzheimers')}>Alzheimer's</button>
+        {/* Examples */}
+        <div className="ip-examples">
+          <span className="ip-examples-label">Quick fill</span>
+          <div className="ip-examples-pills">
+            <button type="button" className="ip-pill" onClick={() => loadExample('parkinsons')}>
+              Parkinson's
+            </button>
+            <button type="button" className="ip-pill" onClick={() => loadExample('alzheimers')}>
+              Alzheimer's
+            </button>
+          </div>
         </div>
 
+        {/* Submit */}
         <button
           type="submit"
-          className={`btn-primary init-btn ${isProcessing ? 'loading-pulse' : ''}`}
+          className={`ip-submit ${isProcessing ? 'ip-submit-loading' : ''}`}
           disabled={isProcessing}
         >
           {isProcessing ? (
             <>
-              <Activity className="spinner" size={20} />
-              <span>Analyzing Patient Data...</span>
+              <Activity className="ip-spinner" size={18} />
+              <span>Analyzing...</span>
             </>
           ) : (
             <>
-              <Sparkles className="icon-glow" size={20} />
+              <Sparkles size={18} />
               <span>Generate Cure Graph</span>
             </>
           )}
         </button>
       </form>
 
-      <div className="panel-footer">
-        <div className="health-dot"></div>
-        <span>NLP Engine Ready</span>
+      {/* Footer */}
+      <div className="ip-footer">
+        <div className="ip-footer-dot" />
+        <span>Engine ready</span>
       </div>
     </div>
   );
