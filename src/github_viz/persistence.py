@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -12,8 +13,6 @@ SCHEMA_VERSION = 2
 
 
 def utc_now() -> str:
-    from datetime import UTC, datetime
-
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 

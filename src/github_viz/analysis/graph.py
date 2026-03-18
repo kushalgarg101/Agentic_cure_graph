@@ -153,6 +153,9 @@ def analyze_case(
 
     matched_disease_labels = {entry.label for entry in matched_diseases.values()}
     matched_biomarker_labels = {entry.label for entry in matched_biomarkers.values()}
+    # Casefolded sets for case-insensitive matching against seed data
+    matched_disease_labels_cf = {l.casefold() for l in matched_disease_labels}
+    matched_biomarker_labels_cf = {l.casefold() for l in matched_biomarker_labels}
 
     # Also include patient-reported diagnoses that may not have matched exactly
     # but are still relevant for hypothesis generation
@@ -178,16 +181,16 @@ def analyze_case(
         matched_disease_labels.add(base_name.lower())
 
     _attach_evidence_network(
-        nodes, links, seed, matched_disease_labels, matched_biomarker_labels
+        nodes, links, seed, matched_disease_labels_cf, matched_biomarker_labels_cf
     )
     ranked_hypotheses = _build_hypotheses(
         nodes,
         links,
         seed,
         patient_node,
-        matched_disease_labels,
-        matched_biomarker_labels,
-        {entry.label for entry in matched_drugs.values()},
+        matched_disease_labels_cf,
+        matched_biomarker_labels_cf,
+        {entry.label.casefold() for entry in matched_drugs.values()},
     )
 
     patient_node.meta["observed_symptoms"] = [
@@ -288,7 +291,7 @@ def _attach_evidence_network(
     label_index = build_label_index(seed)
 
     for relation in seed.get("relationships", {}).get("gene_disease", []):
-        if relation["disease"] not in matched_disease_labels:
+        if relation["disease"].casefold() not in matched_disease_labels:
             continue
         gene = _node_from_seed_entity(label_index[relation["gene"].casefold()], "gene")
         disease = _node_from_seed_entity(
@@ -328,7 +331,7 @@ def _attach_evidence_network(
         )
 
     for relation in seed.get("relationships", {}).get("pathway_disease", []):
-        if relation["disease"] not in matched_disease_labels:
+        if relation["disease"].casefold() not in matched_disease_labels:
             continue
         pathway = _node_from_seed_entity(
             label_index[relation["pathway"].casefold()], "pathway"
@@ -351,7 +354,7 @@ def _attach_evidence_network(
         )
 
     for relation in seed.get("relationships", {}).get("biomarker_pathway", []):
-        if relation["biomarker"] not in matched_biomarker_labels:
+        if relation["biomarker"].casefold() not in matched_biomarker_labels:
             continue
         biomarker = _node_from_seed_entity(
             label_index[relation["biomarker"].casefold()], "biomarker"
@@ -405,7 +408,7 @@ def _build_hypotheses(
     ranked: list[Node] = []
 
     for relation in seed.get("relationships", {}).get("drug_hypotheses", []):
-        if relation["disease"] not in matched_disease_labels:
+        if relation["disease"].casefold() not in matched_disease_labels:
             continue
 
         drug_entity = label_index.get(relation["drug"].casefold())
@@ -420,7 +423,7 @@ def _build_hypotheses(
         nodes.setdefault(disease_node.id, disease_node)
 
         biomarker_overlap = sorted(
-            set(relation.get("biomarker_matches", [])) & matched_biomarker_labels
+            {b.casefold() for b in relation.get("biomarker_matches", [])} & matched_biomarker_labels
         )
         paper_ids = relation.get("papers", [])
         score = _score_hypothesis(relation, biomarker_overlap, matched_drug_labels)
@@ -571,7 +574,7 @@ def _score_hypothesis(
     score += min(0.24, len(relation.get("papers", [])) * 0.08)
     score += min(0.18, len(biomarker_overlap) * 0.09)
     score += min(0.12, len(relation.get("pathways", [])) * 0.04)
-    if relation.get("drug") in matched_drug_labels:
+    if relation.get("drug").casefold() in matched_drug_labels:
         score += 0.08
     return round(min(0.99, score), 3)
 
