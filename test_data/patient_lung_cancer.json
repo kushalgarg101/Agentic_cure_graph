@@ -1,0 +1,50 @@
+{
+  "record": {
+    "id": "PAT-003",
+    "gender": "male",
+    "age_range": "58-63",
+    "condition": [
+      {"code": {"text": "Non-Small Cell Lung Cancer (Adenocarcinoma), Stage IIIB"}},
+      {"code": {"text": "Chronic Obstructive Pulmonary Disease"}},
+      {"code": {"text": "Coronary Artery Disease"}},
+      {"code": {"text": "Hypothyroidism"}},
+      "Anxiety Disorder"
+    ],
+    "observations": [
+      {"display": "CT Chest: 4.2 cm right upper lobe mass with mediastinal lymphadenopathy (stations 4R, 7)"},
+      {"display": "PET-CT: SUVmax 12.4 in primary lesion, metastatic nodes (stations 4R, 7, right hilar)"},
+      {"display": "EGFR mutation: Exon 19 deletion (positive)"},
+      {"display": "PD-L1 TPS: 15%"},
+      {"display": "FEV1: 1.2L (48% predicted)"},
+      {"display": "TSH: 6.8 mIU/L (elevated)"},
+      {"display": "LDL Cholesterol: 162 mg/dL (elevated)"},
+      "Biopsy: adenocarcinoma with lepidic and acinar patterns",
+      "ECOG Performance Status: 1",
+      "Brain MRI: no intracranial metastases"
+    ],
+    "medications": [
+      {"display": "Osimertinib 80 mg daily"},
+      {"display": "Tiotropium 18 mcg inhalation daily"},
+      {"display": "Fluticasone/Salmeterol 250/50 mcg BID"},
+      {"display": "Atorvastatin 40 mg daily"},
+      {"display": "Aspirin 81 mg daily"},
+      {"display": "Levothyroxine 75 mcg daily"},
+      {"display": "Escitalopram 10 mg daily"},
+      "Albuterol HFA PRN"
+    ],
+    "symptoms": [
+      "Chronic dry cough (8 months)",
+      "Hemoptysis (2 episodes in past month)",
+      "Dyspnea on exertion (NYHA Class II)",
+      "Right-sided chest pain (pleuritic)",
+      "Unintentional weight loss (9 kg in 6 months)",
+      "Fatigue",
+      "Decreased appetite",
+      "Night sweats",
+      "Anxiety about diagnosis",
+      "Occasional wheezing",
+      "Cold intolerance"
+    ],
+    "note": "61-year-old male, former smoker (40 pack-years, quit 2 years ago), presenting with 8-month history of chronic cough and progressive dyspnea. CT revealed a 4.2 cm RUL mass with mediastinal adenopathy. Biopsy confirmed adenocarcinoma. EGFR Exon 19 deletion detected — started on osimertinib 6 weeks ago with partial response on first follow-up scan (primary lesion reduced to 3.1 cm). Comorbid COPD (FEV1 48%) limits surgical candidacy — patient was evaluated but deemed inoperable. Stage IIIB (T3N2M0) per AJCC 8th ed. Baseline cardiac workup revealed stable CAD on medical therapy. Hypothyroidism likely secondary to prior radioactive iodine for thyroid nodule (2018); currently euthyroid on levothyroxine. Anxiety managed with escitalopram. Plans: continue osimertinib with serial imaging every 8 weeks, pulmonary rehabilitation, cardiology follow-up. If progression on osimertinib, consider chemotherapy + pembrolizumab given PD-L1 15%."
+  }
+}

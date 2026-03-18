@@ -1,0 +1,43 @@
+{
+  "record": {
+    "id": "PAT-002",
+    "sex": "female",
+    "age": "72-77",
+    "condition": [
+      {"code": {"text": "Alzheimer's Disease (probable)"}},
+      {"code": {"text": "Type 2 Diabetes Mellitus"}},
+      {"code": {"text": "Major Depressive Disorder"}},
+      "Osteoarthritis (knee)"
+    ],
+    "observations": [
+      {"display": "Amyloid PET: positive cortical binding (SUVR 2.1, cortical reference)"},
+      {"display": "CSF Aβ42: 380 pg/mL (decreased)"},
+      {"display": "CSF p-tau181: 78 pg/mL (elevated)"},
+      {"display": "CSF t-tau: 520 pg/mL (elevated)"},
+      {"display": "MMSE Score: 18/30"},
+      {"display": "HbA1c: 7.2%"},
+      "MRI: moderate hippocampal atrophy, enlarged ventricles, posterior cingulate hypometabolism on FDG-PET",
+      "APOE genotype: ε4/ε4 homozygous"
+    ],
+    "medications": [
+      {"display": "Donepezil 10 mg daily"},
+      {"display": "Memantine 10 mg BID"},
+      {"display": "Metformin 500 mg BID"},
+      {"display": "Sertraline 50 mg daily"},
+      "Acetaminophen 500 mg PRN"
+    ],
+    "symptoms": [
+      "Progressive short-term memory loss (2 years)",
+      "Word-finding difficulty (anomia)",
+      "Spatial disorientation",
+      "Difficulty managing finances",
+      "Impaired judgment",
+      "Apathy",
+      "Depressed mood",
+      "Sleep disturbance (fragmented sleep)",
+      "Occasional agitation in the evening (sundowning)",
+      "Mild gait instability"
+    ],
+    "note": "72-year-old woman with 2-year history of progressive cognitive decline, initially presenting with short-term memory lapses and word-finding difficulties. Neuropsychological testing shows predominant amnestic pattern with relative sparing of executive function. Amyloid PET and CSF biomarkers (low Aβ42, elevated p-tau181 and t-tau) are consistent with Alzheimer's pathology. APOE ε4/ε4 genotype confers highest genetic risk. Comorbid T2DM (HbA1c 7.2%) may accelerate neurodegeneration. Depression precedes cognitive decline by ~1 year; currently managed with sertraline. Donepezil and memantine initiated 6 months ago with modest stabilization. Functional assessment: IADLs impaired (cooking, finances, medication management), ADLs intact. Caregiver (daughter) reports increasing sundowning episodes. Recommend follow-up in 3 months, consider lecanemab eligibility evaluation given APOE ε4/ε4 status and early disease stage."
+  }
+}

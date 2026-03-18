@@ -1,0 +1,38 @@
+{
+  "record": {
+    "id": "PAT-001",
+    "gender": "male",
+    "age_range": "65-70",
+    "condition": [
+      {"code": {"text": "Parkinson's Disease"}},
+      {"code": {"text": "Hypertension"}},
+      "REM Sleep Behavior Disorder"
+    ],
+    "observations": [
+      {"display": "Dopamine transporter (DaTSCAN): significantly reduced uptake in putamen"},
+      {"display": "CSF alpha-synuclein: 1.8 pg/mL (elevated)"},
+      {"display": "Serum uric acid: 3.2 mg/dL (low)"},
+      {"display": "UPDRS Motor Score: 32"},
+      {"display": "Hoehn and Yahr Stage: 2.5"},
+      "MRI: mild diffuse cerebral atrophy, normal T2 signal in basal ganglia"
+    ],
+    "medications": [
+      {"display": "Levodopa/Carbidopa 100/25 mg TID"},
+      {"display": "Rasagiline 1 mg daily"},
+      {"display": "Pramipexole 0.5 mg TID"},
+      "Amlodipine 5 mg daily"
+    ],
+    "symptoms": [
+      "Resting tremor (right hand dominant)",
+      "Bradykinesia",
+      "Rigidity (cogwheel type, bilateral)",
+      "Postural instability",
+      "Micrographia",
+      "Hypophonia",
+      "REM sleep behavior disorder",
+      "Constipation",
+      "Anosmia"
+    ],
+    "note": "Patient presents with a 4-year history of progressive motor symptoms beginning in the right hand. DaTSCAN confirms dopaminergic deficit. Currently on optimized Levodopa therapy with good on-time but experiencing wearing-off effects. Non-motor symptoms include REM sleep behavior disorder, constipation, and anosmia — likely representing the prodromal phase that preceded motor onset. Family history is negative for Parkinson's disease. No cognitive impairment detected on MoCA (score 27/30). Blood pressure shows orthostatic drop of 20 mmHg systolic. Consider adjustment of dopaminergic therapy or addition of COMT inhibitor if wearing-off worsens."
+  }
+}
