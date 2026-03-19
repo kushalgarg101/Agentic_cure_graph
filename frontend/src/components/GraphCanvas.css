@@ -14,192 +14,239 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 16px;
+    z-index: 5;
 }
 
-.gc-empty-ring {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    border: 1px solid rgba(0, 229, 255, 0.12);
-    animation: gcPulse 3s ease-in-out infinite;
+.gc-empty-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 140px;
+    height: 140px;
+    position: relative;
 }
 
-.gc-empty-inner {
+.gc-empty-ring-outer {
     position: absolute;
-    width: 50px;
-    height: 50px;
+    inset: 0;
     border-radius: 50%;
-    background: rgba(0, 229, 255, 0.06);
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
+    border: 1px dashed rgba(0, 240, 255, 0.2);
+    animation: gcSpinSlow 12s linear infinite;
+}
+
+.gc-empty-ring-inner {
+    position: absolute;
+    inset: 15%;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 240, 255, 0.05);
+    border-top-color: rgba(0, 240, 255, 0.4);
+    border-bottom-color: rgba(0, 240, 255, 0.4);
+    animation: gcSpinFast 4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.gc-empty-core {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 240, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);
+    animation: gcPulse 3s ease-in-out infinite alternate;
 }
 
 .gc-empty-title {
     margin-top: 16px;
-    font-size: 1.3rem;
+    font-size: 1.6rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #fff 0%, rgba(0, 229, 255, 0.7) 100%);
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #fff 0%, rgba(0, 240, 255, 0.8) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .gc-empty-sub {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-dim);
     max-width: 320px;
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.6;
+}
+
+@keyframes gcSpinSlow {
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes gcSpinFast {
+    100% { transform: rotate(-360deg); }
 }
 
 @keyframes gcPulse {
-    0%, 100% { transform: scale(1); opacity: 0.6; }
-    50% { transform: scale(1.08); opacity: 1; }
+    0% { transform: scale(0.85); opacity: 0.6; box-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
+    100% { transform: scale(1.15); opacity: 1; box-shadow: 0 0 60px rgba(0, 240, 255, 0.5); }
 }
 
 /* ── Zoom Controls ── */
 .gc-controls {
     position: absolute;
-    bottom: 24px;
-    right: 24px;
+    bottom: 32px;
+    right: 32px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     z-index: 10;
 }
 
 .gc-controls button {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(11, 15, 25, 0.8);
+    background: rgba(10, 15, 25, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+    border-radius: 14px;
     color: var(--text-muted);
     cursor: pointer;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.2s;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .gc-controls button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(-4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255,255,255,0.05);
 }
 
 /* ── Label Toggle ── */
 .gc-label-toggle {
     position: absolute;
-    bottom: 24px;
-    left: 24px;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
 }
 
 .gc-label-toggle button {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(11, 15, 25, 0.8);
+    gap: 8px;
+    background: rgba(10, 15, 25, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+    border-radius: 20px;
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-family: var(--font-base);
-    padding: 6px 10px;
+    font-weight: 600;
+    padding: 10px 18px;
     cursor: pointer;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.2s;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .gc-label-toggle button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
     color: #fff;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* ── Legend ── */
 .gc-legend {
     position: absolute;
-    top: 24px;
-    right: 24px;
+    top: 32px;
+    right: 32px;
     z-index: 10;
-    background: rgba(11, 15, 25, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 10px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(6, 9, 19, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     overflow: hidden;
-    min-width: 130px;
+    min-width: 150px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .gc-legend-toggle {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     width: 100%;
-    background: none;
+    background: rgba(255, 255, 255, 0.02);
     border: none;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-family: var(--font-base);
     font-weight: 600;
-    padding: 10px 12px;
+    padding: 14px 16px;
     cursor: pointer;
-    transition: color 0.2s;
+    transition: all 0.3s ease;
 }
 
 .gc-legend-toggle:hover {
     color: #fff;
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .gc-legend-arrow {
     margin-left: auto;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     opacity: 0.5;
+    transition: transform 0.3s ease;
+}
+
+.gc-legend-open .gc-legend-arrow {
+    transform: rotate(90deg);
 }
 
 .gc-legend-items {
-    padding: 0 12px 10px;
+    padding: 8px 16px 16px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
 }
 
 .gc-legend-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.73rem;
+    gap: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
     color: var(--text-muted);
 }
 
 .gc-legend-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    background: var(--acc-cyan);
     flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* ── Node/Edge Count Badge ── */
+/* ── Badge ── */
 .gc-badge {
     position: absolute;
-    top: 24px;
-    left: 24px;
+    top: 32px;
+    left: 80px; /* Offset to clear sidebar shadow nicely */
     z-index: 10;
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--text-dim);
-    background: rgba(11, 15, 25, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 8px;
-    padding: 6px 12px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    letter-spacing: 0.3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(6, 9, 19, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 8px 16px;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }

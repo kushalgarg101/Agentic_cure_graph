@@ -1,75 +1,67 @@
-/* ── Input Panel Container ── */
 .input-panel {
     display: flex;
     flex-direction: column;
     height: 100%;
-    padding: 20px;
-    background: linear-gradient(180deg, rgba(11, 15, 25, 0.95) 0%, rgba(11, 15, 25, 0.6) 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    padding: 24px 20px;
     overflow-y: auto;
     overflow-x: hidden;
 }
 
-/* ── Header ── */
 .ip-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .ip-header-icon {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    background: rgba(0, 229, 255, 0.08);
-    border: 1px solid rgba(0, 229, 255, 0.15);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(0, 240, 255, 0.05));
+    border: 1px solid rgba(0, 240, 255, 0.2);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
     color: var(--acc-cyan);
     flex-shrink: 0;
 }
 
 .ip-header-text h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 1.25rem;
+    font-weight: 600;
     color: #fff;
     margin: 0;
-    line-height: 1.3;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
 }
 
 .ip-header-sub {
     font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--text-dim);
+    letter-spacing: 2px;
+    color: var(--acc-cyan);
+    font-weight: 600;
+    opacity: 0.8;
 }
 
-/* ── Divider ── */
-.ip-divider {
-    height: 1px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-    margin: 16px 0;
-}
-
-/* ── Form ── */
 .ip-form {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
-    min-height: 0;
+    flex: 1 0 auto;
+    gap: 20px;
 }
 
-/* ── Section ── */
 .ip-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .ip-section-grow {
-    flex-grow: 1;
-    min-height: 0;
+    flex: 1 0 auto;
 }
 
 .ip-section-head {
@@ -78,313 +70,314 @@
     align-items: center;
 }
 
-.ip-section-label {
-    font-size: 0.7rem;
+.ip-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1.4px;
-    color: var(--text-dim);
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    line-height: 1;
 }
 
-/* ── Row (Demographics) ── */
+.ip-section-title svg {
+    color: var(--acc-cyan);
+    opacity: 0.8;
+}
+
 .ip-row {
     display: flex;
-    gap: 12px;
+    gap: 16px;
 }
 
 .ip-field {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    position: relative;
+    min-width: 0;
 }
 
 .ip-field label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    font-weight: 500;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin-left: 4px;
 }
 
-/* ── Inputs ── */
+/* Glassmorphic Inputs */
 .ip-field input,
-.ip-field select {
+.ip-field select,
+.ip-textarea {
     width: 100%;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 8px;
-    padding: 9px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 10px 14px;
     color: #fff;
     font-family: var(--font-base);
-    font-size: 0.88rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.ip-field input::placeholder {
-    color: var(--text-dim);
+.ip-field input::placeholder,
+.ip-textarea::placeholder {
+    color: rgba(255, 255, 255, 0.2);
 }
 
 .ip-field input:focus,
-.ip-field select:focus {
+.ip-field select:focus,
+.ip-textarea:focus {
     outline: none;
-    border-color: rgba(0, 229, 255, 0.35);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.06);
+    background: rgba(0, 240, 255, 0.03);
+    border-color: rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .ip-field select option {
-    background: var(--bg-color);
+    background: #0B101E;
     color: #fff;
 }
 
-/* ── Symptom Input ── */
-.ip-symptom-input-row {
-    display: flex;
-    gap: 8px;
-}
-
-.ip-symptom-input-row input {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    border-radius: 8px;
-    padding: 9px 12px;
-    color: #fff;
-    font-family: var(--font-base);
-    font-size: 0.88rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.ip-symptom-input-row input::placeholder {
-    color: var(--text-dim);
-}
-
-.ip-symptom-input-row input:focus {
-    outline: none;
-    border-color: rgba(0, 229, 255, 0.35);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.06);
-}
-
-.ip-add-btn {
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 229, 255, 0.06);
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    border-radius: 8px;
-    color: var(--acc-cyan);
-    cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
-}
-
-.ip-add-btn:hover:not(:disabled) {
-    background: rgba(0, 229, 255, 0.14);
-    border-color: rgba(0, 229, 255, 0.35);
-}
-
-.ip-add-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-/* ── Chips ── */
-.ip-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.ip-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(255, 176, 32, 0.08);
-    border: 1px solid rgba(255, 176, 32, 0.2);
-    color: var(--acc-amber);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.78rem;
-    font-weight: 500;
-}
-
-.ip-chip-x {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-    opacity: 0.5;
-    padding: 0;
-    transition: opacity 0.15s;
-}
-
-.ip-chip-x:hover {
-    opacity: 1;
-}
-
-/* ── Textarea ── */
-.ip-upload-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    font-size: 0.72rem;
-    font-family: var(--font-base);
-    cursor: pointer;
-    transition: color 0.2s;
-    padding: 0;
-}
-
-.ip-upload-btn:hover {
-    color: var(--acc-cyan);
-}
-
-.ip-upload-btn:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
-}
-
+/* Custom Textarea */
 .ip-textarea {
-    width: 100%;
-    flex-grow: 1;
-    min-height: 100px;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.ip-textarea-compact {
+    min-height: 80px;
+}
+
+.ip-textarea-large {
+    min-height: 120px;
+}
+
+.ip-textarea-code {
+    min-height: 300px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.8rem;
+    color: var(--acc-green);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.ip-textarea-code::placeholder {
+    color: rgba(0, 255, 157, 0.2);
+}
+
+/* Segmented Control for Input Mode */
+.ip-mode-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    padding: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.ip-mode-toggle button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
     border-radius: 10px;
-    padding: 14px;
-    color: var(--text-muted);
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.82rem;
-    line-height: 1.65;
-    resize: none;
-    transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
-}
-
-.ip-textarea::placeholder {
     color: var(--text-dim);
+    font-family: var(--font-base);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.ip-textarea:focus {
-    outline: none;
-    border-color: rgba(0, 229, 255, 0.3);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.05);
-    color: var(--text-main);
+.ip-mode-toggle button:hover:not(:disabled) {
+    color: var(--text-muted);
 }
 
-/* ── Examples ── */
+.ip-mode-toggle button.ip-mode-active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ip-mode-active svg {
+    color: var(--acc-cyan);
+}
+
+/* Quick Fill Pills */
 .ip-examples {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 8px;
-    margin-top: 16px;
-}
-
-.ip-examples-label {
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    flex-shrink: 0;
+    margin-top: 8px;
 }
 
 .ip-examples-pills {
     display: flex;
-    gap: 6px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .ip-pill {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-muted);
-    font-size: 0.72rem;
-    font-family: var(--font-base);
-    padding: 4px 12px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 6px 14px;
     border-radius: 20px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .ip-pill:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 240, 255, 0.1);
     color: #fff;
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.1);
 }
 
-/* ── Submit Button ── */
+.ip-pill svg {
+    color: var(--acc-cyan);
+    opacity: 0.7;
+}
+
+/* File Upload Button */
+.ip-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 240, 255, 0.05);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 8px;
+    color: var(--acc-cyan);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ip-upload-btn:hover:not(:disabled) {
+    background: rgba(0, 240, 255, 0.15);
+    border-color: rgba(0, 240, 255, 0.3);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+}
+
+/* Glowing Submit Button */
 .ip-submit {
     width: 100%;
-    height: 46px;
+    height: 54px;
     margin-top: 16px;
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 229, 255, 0.05) 100%);
-    border: 1px solid rgba(0, 229, 255, 0.35);
-    color: var(--acc-cyan);
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.9), rgba(0, 119, 255, 0.9));
+    border: none;
+    color: #060913;
     font-family: var(--font-base);
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: 14px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    transition: all 0.25s;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 24px rgba(0, 240, 255, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.ip-submit::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
 .ip-submit:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.25) 0%, rgba(0, 229, 255, 0.1) 100%);
-    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
-    transform: translateY(-1px);
+    box-shadow: 0 12px 32px rgba(0, 240, 255, 0.4);
+    transform: translateY(-2px);
+}
+
+.ip-submit:hover::before {
+    opacity: 1;
 }
 
 .ip-submit:active:not(:disabled) {
-    transform: translateY(0);
+    transform: translateY(1px);
+    box-shadow: 0 4px 12px rgba(0, 240, 255, 0.2);
 }
 
 .ip-submit:disabled {
-    opacity: 0.6;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.3);
+    box-shadow: none;
     cursor: not-allowed;
 }
 
 .ip-submit-loading {
-    animation: agenticPulse 2s infinite;
+    background: rgba(0, 240, 255, 0.15) !important;
+    color: var(--acc-cyan) !important;
+    border: 1px solid rgba(0, 240, 255, 0.3) !important;
+    animation: ipPulsate 2s infinite alternate;
+}
+
+@keyframes ipPulsate {
+    0% { box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+    100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.3); }
 }
 
 .ip-spinner {
-    animation: ipSpin 1s linear infinite;
+    animation: ipSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
 @keyframes ipSpin {
     100% { transform: rotate(360deg); }
 }
 
-/* ── Footer ── */
 .ip-footer {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.68rem;
+    padding-bottom: 8px;
+    font-size: 0.65rem;
     color: var(--text-dim);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    font-weight: 600;
+    flex-shrink: 0;
 }
 
 .ip-footer-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--acc-green);
-    box-shadow: 0 0 6px var(--acc-green);
-    animation: ipBlink 2.5s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--acc-green);
+    animation: badgePulse 2s infinite alternate;
 }
 
-@keyframes ipBlink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
+@keyframes badgePulse {
+    0% { opacity: 0.4; box-shadow: 0 0 4px var(--acc-green); }
+    100% { opacity: 1; box-shadow: 0 0 12px var(--acc-green); }
 }
