@@ -73,6 +73,23 @@ def request(app, method, path, **kwargs):
     return asyncio.run(_run())
 
 
+def wait_for_analysis_completion(app, analysis_id: str, timeout_s: float = 3.0) -> dict:
+    import time
+
+    deadline = time.time() + timeout_s
+    last_body = {}
+
+    while time.time() < deadline:
+        response = request(app, "GET", f"/analyses/{analysis_id}")
+        assert response.status_code == 200
+        last_body = response.json()
+        if last_body["status"] in {"completed", "failed"}:
+            return last_body
+        time.sleep(0.1)
+
+    raise AssertionError(f"analysis {analysis_id} did not complete in time: {last_body}")
+
+
 @pytest.fixture
 def app():
     overlay_path = build_test_overlay_path()
@@ -212,3 +229,73 @@ def test_analyses_resource_and_evidence(app):
 
     status_response = request(app, "GET", f"/analyses/{analysis_id}")
     assert status_response.status_code == 200
+
+
+def test_primary_analyses_flow_exposes_frontend_artifacts(app, analyze_payload):
+    create_response = request(app, "POST", "/analyses", json=analyze_payload)
+    assert create_response.status_code == 200
+    analysis_id = create_response.json()["id"]
+
+    status = wait_for_analysis_completion(app, analysis_id)
+    assert status["status"] == "completed"
+
+    graph_response = request(app, "GET", f"/analyses/{analysis_id}/graph")
+    stats_response = request(app, "GET", f"/analyses/{analysis_id}/stats")
+    hypotheses_response = request(app, "GET", f"/analyses/{analysis_id}/hypotheses")
+    evidence_response = request(app, "GET", f"/analyses/{analysis_id}/evidence")
+
+    assert graph_response.status_code == 200
+    assert stats_response.status_code == 200
+    assert hypotheses_response.status_code == 200
+    assert evidence_response.status_code == 200
+
+    graph = graph_response.json()
+    stats = stats_response.json()
+    hypotheses = hypotheses_response.json()["items"]
+    evidence = evidence_response.json()["items"]
+
+    assert graph["meta"]["analysis_id"] == analysis_id
+    assert stats["total_nodes"] >= 1
+    assert hypotheses
+    assert evidence
+    assert evidence[0]["hypothesis_id"] == hypotheses[0]["id"]
+
+
+def test_fhir_normalized_payload_submits_to_primary_analysis_api(app):
+    normalize_response = request(
+        app,
+        "POST",
+        "/fhir/normalize",
+        json={
+            "record": {
+                "id": "fhir-frontend-001",
+                "gender": "female",
+                "age_range": "60-69",
+                "condition": [{"code": {"text": "Parkinson's disease"}}],
+                "observations": [{"display": "Elevated inflammation"}],
+                "medications": [{"display": "Metformin"}],
+                "symptoms": ["Tremor"],
+                "note": "Narrative text from frontend",
+            }
+        },
+    )
+    assert normalize_response.status_code == 200
+
+    normalized_payload = normalize_response.json()
+    normalized_payload["input_format"] = "fhir"
+
+    create_response = request(app, "POST", "/analyses", json=normalized_payload)
+    assert create_response.status_code == 200
+
+    analysis_id = create_response.json()["id"]
+    status = wait_for_analysis_completion(app, analysis_id)
+
+    assert status["status"] == "completed"
+
+    graph_response = request(app, "GET", f"/analyses/{analysis_id}/graph")
+    assert graph_response.status_code == 200
+    graph = graph_response.json()
+
+    patient_nodes = [node for node in graph["nodes"] if node["type"] == "patient"]
+    assert patient_nodes
+    assert patient_nodes[0]["meta"]["diagnoses"] == ["Parkinson's disease"]
