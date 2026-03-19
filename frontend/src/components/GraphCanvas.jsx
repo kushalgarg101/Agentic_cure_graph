@@ -1,19 +1,19 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import { ZoomIn, ZoomOut, Maximize2, Eye, EyeOff } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Eye, EyeOff, Layers } from 'lucide-react';
 import './GraphCanvas.css';
 
 const NODE_TYPES = {
-    patient:        { color: '#E040FB', label: 'Patient',    size: 12 },
-    disease:        { color: '#FF5252', label: 'Disease',    size: 9  },
-    symptom:        { color: '#FFB020', label: 'Symptom',    size: 7  },
-    biomarker:      { color: '#00E5FF', label: 'Biomarker',  size: 7  },
-    drug:           { color: '#00FFA3', label: 'Drug',       size: 9  },
-    gene:           { color: '#7C4DFF', label: 'Gene',       size: 6  },
-    protein:        { color: '#448AFF', label: 'Protein',    size: 6  },
+    patient:        { color: '#F000FF', label: 'Patient',    size: 14 },
+    disease:        { color: '#FF3366', label: 'Disease',    size: 10 },
+    symptom:        { color: '#FFB800', label: 'Symptom',    size: 7  },
+    biomarker:      { color: '#00F0FF', label: 'Biomarker',  size: 7  },
+    drug:           { color: '#00FF9D', label: 'Drug',       size: 10 },
+    gene:           { color: '#7B61FF', label: 'Gene',       size: 6  },
+    protein:        { color: '#2B80FF', label: 'Protein',    size: 6  },
     pathway:        { color: '#FF6E40', label: 'Pathway',    size: 6  },
-    research_paper: { color: '#9E9E9E', label: 'Paper',      size: 5  },
-    hypothesis:     { color: '#FFEA00', label: 'Hypothesis', size: 8  },
+    research_paper: { color: '#8892B0', label: 'Paper',      size: 5  },
+    hypothesis:     { color: '#FFF500', label: 'Hypothesis', size: 9  },
 };
 
 const getNodeMeta = (node) => NODE_TYPES[node.type] || { color: '#FFFFFF', label: node.type, size: 5 };
@@ -44,9 +44,9 @@ export default function GraphCanvas({ graphData }) {
         if (graphData?.nodes?.length > 0 && fgRef.current) {
             setTimeout(() => {
                 const fg = fgRef.current;
-                fg.d3Force('charge').strength(-300);
-                fg.d3Force('link').distance(60);
-                fg.zoomToFit(600, 60);
+                fg.d3Force('charge').strength(-350);
+                fg.d3Force('link').distance(70);
+                fg.zoomToFit(600, 80);
             }, 300);
         }
     }, [graphData]);
@@ -74,87 +74,118 @@ export default function GraphCanvas({ graphData }) {
     }, [hoverNode, adjacency]);
 
     // Zoom helpers
-    const handleZoomIn = () => fgRef.current?.zoom(1.4, 300);
-    const handleZoomOut = () => fgRef.current?.zoom(0.7, 300);
-    const handleFit = () => fgRef.current?.zoomToFit(400, 60);
+    const handleZoomIn = () => fgRef.current?.zoom(1.5, 400);
+    const handleZoomOut = () => fgRef.current?.zoom(0.66, 400);
+    const handleFit = () => fgRef.current?.zoomToFit(600, 80);
 
     // Node rendering
     const drawNode = useCallback((node, ctx, globalScale) => {
+        // Guard: skip rendering if node coordinates are not yet computed by the force layout
+        if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
+
         const meta = getNodeMeta(node);
         const highlighted = hoverNode ? isConnected(node.id) : true;
-        const alpha = highlighted ? 1 : 0.12;
+        const isHoveredNode = hoverNode && (node.id === (hoverNode.id || hoverNode));
+        
+        // Dynamic opacity based on zoom and highlight state
+        let alpha = highlighted ? 1 : Math.max(0.05, 0.15 - (globalScale * 0.05));
         const radius = meta.size / globalScale;
         const nodeColor = meta.color;
 
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        // Outer glow
+        // Enhanced Glow (Outer)
         if (highlighted) {
             ctx.shadowColor = nodeColor;
-            ctx.shadowBlur = 12 / globalScale;
+            ctx.shadowBlur = (isHoveredNode ? 24 : 15) / globalScale;
+            
+            // For hovered node, draw a large subtle outer halo
+            if (isHoveredNode) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius * 3, 0, 2 * Math.PI);
+                ctx.fillStyle = `${nodeColor}1A`; // 10% opacity
+                ctx.fill();
+            }
         }
 
-        // Main circle
+        // Main Body Fill with radial gradient for 3D effect
+        const grad = ctx.createRadialGradient(
+            node.x - radius * 0.3, node.y - radius * 0.3, 0,
+            node.x, node.y, radius
+        );
+        grad.addColorStop(0, '#FFFFFF');
+        grad.addColorStop(0.3, nodeColor);
+        grad.addColorStop(1, '#000000'); // Fades to dark edges
+
         ctx.beginPath();
         ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = nodeColor;
+        ctx.fillStyle = highlighted ? grad : nodeColor; // Flat color if dimmed
         ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.shadowBlur = 0; // Turn off shadow so it doesn't apply to the stroke
 
-        // Inner bright core
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, radius * 0.45, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-        ctx.fill();
-
-        // Hovered node ring
-        if (hoverNode && (node.id === (hoverNode.id || hoverNode))) {
+        // Hover Ring
+        if (isHoveredNode) {
             ctx.beginPath();
-            ctx.arc(node.x, node.y, radius + 3 / globalScale, 0, 2 * Math.PI);
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 1.5 / globalScale;
+            ctx.arc(node.x, node.y, radius + (6 / globalScale), 0, 2 * Math.PI);
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 2 / globalScale;
+            ctx.setLineDash([4 / globalScale, 4 / globalScale]);
             ctx.stroke();
+            ctx.setLineDash([]);
         }
 
-        // Label
-        if (showLabels && globalScale > 0.6) {
+        // Label Rendering
+        if (showLabels && (globalScale > 0.8 || isHoveredNode)) {
             const label = node.label || node.id;
-            const fontSize = 11 / globalScale;
-            ctx.font = `500 ${fontSize}px 'Outfit', -apple-system, sans-serif`;
+            const fontSize = (isHoveredNode ? 14 : 11) / globalScale;
+            ctx.font = `600 ${fontSize}px var(--font-base), sans-serif`;
             const textWidth = ctx.measureText(label).width;
-            const padX = fontSize * 0.5;
-            const padY = fontSize * 0.25;
+            
+            const padX = fontSize * 0.6;
+            const padY = fontSize * 0.3;
             const pillW = textWidth + padX * 2;
-            const pillH = fontSize + padY * 2;
-            const textY = node.y + radius + (padY + 3 / globalScale);
+            const pillH = fontSize + padY * 2.5;
+            const textY = node.y + radius + (padY + (isHoveredNode ? 10 : 5) / globalScale);
 
-            // Pill background
             const pillX = node.x - pillW / 2;
             const pillY = textY - pillH / 2;
-            const r = pillH / 2;
+            const roundness = pillH / 2;
+
+            // Draw rounded pill background
             ctx.beginPath();
-            ctx.moveTo(pillX + r, pillY);
-            ctx.lineTo(pillX + pillW - r, pillY);
-            ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + r);
-            ctx.lineTo(pillX + pillW, pillY + pillH - r);
-            ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - r, pillY + pillH);
-            ctx.lineTo(pillX + r, pillY + pillH);
-            ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - r);
-            ctx.lineTo(pillX, pillY + r);
-            ctx.quadraticCurveTo(pillX, pillY, pillX + r, pillY);
+            ctx.moveTo(pillX + roundness, pillY);
+            ctx.lineTo(pillX + pillW - roundness, pillY);
+            ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + roundness);
+            ctx.lineTo(pillX + pillW, pillY + pillH - roundness);
+            ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - roundness, pillY + pillH);
+            ctx.lineTo(pillX + roundness, pillY + pillH);
+            ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - roundness);
+            ctx.lineTo(pillX, pillY + roundness);
+            ctx.quadraticCurveTo(pillX, pillY, pillX + roundness, pillY);
             ctx.closePath();
-            ctx.fillStyle = 'rgba(11, 15, 25, 0.88)';
+
+            ctx.fillStyle = isHoveredNode ? 'rgba(6, 9, 19, 0.95)' : 'rgba(6, 9, 19, 0.8)';
             ctx.fill();
-            ctx.strokeStyle = highlighted ? `${nodeColor}44` : 'rgba(255,255,255,0.05)';
-            ctx.lineWidth = 0.6 / globalScale;
+
+            // Pill Border
+            ctx.strokeStyle = highlighted ? `${nodeColor}66` : 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = (isHoveredNode ? 1.5 : 1) / globalScale;
             ctx.stroke();
 
-            // Text
+            // Draw Text
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillStyle = highlighted ? '#E2E8F0' : '#555';
+            ctx.fillStyle = isHoveredNode ? '#FFFFFF' : (highlighted ? '#E2E8F0' : '#8892B0');
             ctx.fillText(label, node.x, textY);
+            
+            // Sub-label for hovered nodes (shows type)
+            if (isHoveredNode && globalScale > 0.5) {
+                const subFontSize = 8 / globalScale;
+                ctx.font = `500 ${subFontSize}px var(--font-base), sans-serif`;
+                ctx.fillStyle = nodeColor;
+                ctx.fillText(meta.label.toUpperCase(), node.x, textY + pillH/2 + subFontSize/2 + (2/globalScale));
+            }
         }
 
         ctx.restore();
@@ -163,32 +194,60 @@ export default function GraphCanvas({ graphData }) {
     // Edge rendering
     const drawLink = useCallback((link, ctx, globalScale) => {
         const highlighted = hoverNode ? isConnected(link.source?.id || link.source) && isConnected(link.target?.id || link.target) : true;
+        
         ctx.save();
-        ctx.globalAlpha = highlighted ? 0.25 : 0.03;
+        ctx.globalAlpha = highlighted ? 0.35 : 0.05;
 
         const srcMeta = getNodeMeta(link.source);
-        ctx.strokeStyle = srcMeta.color;
-        ctx.lineWidth = (highlighted ? 1.2 : 0.5) / globalScale;
+        const tgtMeta = getNodeMeta(link.target);
+        
+        // Validate coordinates to prevent "non-finite double value" Canvas errors
+        const sx = link.source.x;
+        const sy = link.source.y;
+        const tx = link.target.x;
+        const ty = link.target.y;
+
+        if (typeof sx !== 'number' || typeof sy !== 'number' || typeof tx !== 'number' || typeof ty !== 'number' ||
+            !Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(tx) || !Number.isFinite(ty)) {
+            ctx.restore();
+            return;
+        }
+
+        // Gradient stroke for edges
+        const grad = ctx.createLinearGradient(sx, sy, tx, ty);
+        grad.addColorStop(0, srcMeta.color);
+        grad.addColorStop(1, tgtMeta.color);
+        
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = (highlighted ? 1.5 : 0.5) / globalScale;
+        
         ctx.beginPath();
-        ctx.moveTo(link.source.x, link.source.y);
-        ctx.lineTo(link.target.x, link.target.y);
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(tx, ty);
         ctx.stroke();
 
         // Arrow
-        if (highlighted && globalScale > 0.4) {
-            const dir = Math.atan2(link.target.y - link.source.y, link.target.x - link.source.x);
-            const tgtMeta = getNodeMeta(link.target);
-            const tgtR = tgtMeta.size / globalScale;
-            const arrowLen = 4 / globalScale;
-            const endX = link.target.x - Math.cos(dir) * tgtR;
-            const endY = link.target.y - Math.sin(dir) * tgtR;
-            ctx.fillStyle = srcMeta.color;
-            ctx.beginPath();
-            ctx.moveTo(endX, endY);
-            ctx.lineTo(endX - arrowLen * Math.cos(dir - 0.4), endY - arrowLen * Math.sin(dir - 0.4));
-            ctx.lineTo(endX - arrowLen * Math.cos(dir + 0.4), endY - arrowLen * Math.sin(dir + 0.4));
-            ctx.closePath();
-            ctx.fill();
+        if (highlighted && globalScale > 0.3) {
+            const dir = Math.atan2(ty - sy, tx - sx);
+            
+            // Validate dir is a finite number
+            if (Number.isFinite(dir)) {
+                const tgtR = tgtMeta.size / globalScale;
+                const arrowLen = 5 / globalScale;
+                const arrowWidth = 0.5;
+                
+                const endX = tx - Math.cos(dir) * (tgtR + 2/globalScale);
+                const endY = ty - Math.sin(dir) * (tgtR + 2/globalScale);
+                
+                ctx.fillStyle = tgtMeta.color;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - arrowLen * Math.cos(dir - arrowWidth), endY - arrowLen * Math.sin(dir - arrowWidth));
+                ctx.lineTo(endX - arrowLen * Math.cos(dir + arrowWidth), endY - arrowLen * Math.sin(dir + arrowWidth));
+                ctx.closePath();
+                ctx.fill();
+            }
         }
 
         ctx.restore();
@@ -199,10 +258,13 @@ export default function GraphCanvas({ graphData }) {
         return (
             <div className="gc-container" ref={containerRef}>
                 <div className="gc-empty">
-                    <div className="gc-empty-ring" />
-                    <div className="gc-empty-inner" />
-                    <p className="gc-empty-title">Cure Graph</p>
-                    <p className="gc-empty-sub">Submit patient data to visualize the biomedical reasoning graph</p>
+                    <div className="gc-empty-brand">
+                        <div className="gc-empty-ring-outer" />
+                        <div className="gc-empty-ring-inner" />
+                        <div className="gc-empty-core" />
+                    </div>
+                    <p className="gc-empty-title">CURE GRAPH</p>
+                    <p className="gc-empty-sub">Connecting the dots across millions of biomedical relationships.</p>
                 </div>
             </div>
         );
@@ -215,10 +277,6 @@ export default function GraphCanvas({ graphData }) {
                 width={dimensions.width}
                 height={dimensions.height}
                 graphData={graphData}
-                nodeLabel={node => {
-                    const meta = getNodeMeta(node);
-                    return `${node.label || node.id}  [${meta.label}]`;
-                }}
                 nodeColor={() => 'transparent'}
                 nodeRelSize={1}
                 nodeCanvasObjectMode={() => 'replace'}
@@ -228,54 +286,58 @@ export default function GraphCanvas({ graphData }) {
                 onNodeHover={setHoverNode}
                 onNodeClick={(node) => {
                     if (node) {
-                        fgRef.current.centerAt(node.x, node.y, 600);
-                        fgRef.current.zoom(2.5, 600);
+                        fgRef.current.centerAt(node.x, node.y, 800);
+                        fgRef.current.zoom(2.5, 800);
                     }
                 }}
                 enableNodeDrag={true}
                 enableZoomPanInteraction={true}
                 backgroundColor="transparent"
-                cooldownTicks={200}
+                cooldownTicks={250}
                 warmupTicks={50}
             />
 
-            {/* Zoom Controls */}
-            <div className="gc-controls">
-                <button onClick={handleZoomIn} title="Zoom in"><ZoomIn size={16} /></button>
-                <button onClick={handleZoomOut} title="Zoom out"><ZoomOut size={16} /></button>
-                <button onClick={handleFit} title="Fit to view"><Maximize2 size={16} /></button>
+            {/* Badge */}
+            <div className="gc-badge">
+                {graphData.nodes.length} nodes · {graphData.links.length} edges
             </div>
 
-            {/* Label Toggle */}
+            {/* Zoom Controls */}
+            <div className="gc-controls">
+                <button onClick={handleZoomIn} title="Zoom in"><ZoomIn size={18} /></button>
+                <button onClick={handleZoomOut} title="Zoom out"><ZoomOut size={18} /></button>
+                <button onClick={handleFit} title="Fit to view"><Maximize2 size={18} /></button>
+            </div>
+
+            {/* Label Toggle at Bottom Center */}
             <div className="gc-label-toggle">
-                <button onClick={() => setShowLabels(v => !v)} title={showLabels ? 'Hide labels' : 'Show labels'}>
-                    {showLabels ? <Eye size={14} /> : <EyeOff size={14} />}
-                    <span>Labels</span>
+                <button onClick={() => setShowLabels(v => !v)}>
+                    {showLabels ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <span>{showLabels ? 'Hide Labels' : 'Show Labels'}</span>
                 </button>
             </div>
 
             {/* Legend */}
             <div className={`gc-legend ${legendOpen ? 'gc-legend-open' : ''}`}>
                 <button className="gc-legend-toggle" onClick={() => setLegendOpen(v => !v)}>
-                    <span className="gc-legend-dot" />
-                    <span>{legendOpen ? 'Legend' : `${Object.keys(NODE_TYPES).length}`}</span>
+                    <Layers size={16} className="gc-legend-icon" />
+                    <span>{legendOpen ? 'Legend' : `${Object.keys(NODE_TYPES).length} Types`}</span>
                     <span className="gc-legend-arrow">{legendOpen ? '▾' : '▸'}</span>
                 </button>
                 {legendOpen && (
                     <div className="gc-legend-items">
                         {Object.entries(NODE_TYPES).map(([key, val]) => (
                             <div key={key} className="gc-legend-item">
-                                <span className="gc-legend-dot" style={{ background: val.color, boxShadow: `0 0 6px ${val.color}88` }} />
+                                <span className="gc-legend-dot" style={{ 
+                                    background: val.color, 
+                                    boxShadow: `0 0 10px ${val.color}99`,
+                                    borderColor: `${val.color}99` 
+                                }} />
                                 <span>{val.label}</span>
                             </div>
                         ))}
                     </div>
                 )}
-            </div>
-
-            {/* Node count badge */}
-            <div className="gc-badge">
-                {graphData.nodes.length} nodes · {graphData.links.length} edges
             </div>
         </div>
     );
