@@ -6,7 +6,7 @@ import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,11 +22,6 @@ from github_viz.api.schemas import (
     FhirNormalizeRequest,
 )
 
-class EnrichRequest(BaseModel):
-    hypothesis_id: str
-    patient_summary: str
-    hypothesis_label: str
-    hypothesis_mechanism: str = ""
 from github_viz.config import Settings, get_settings
 from github_viz.ingestion.fhir import parse_fhir_record
 from github_viz.logging_config import configure_logging
@@ -35,6 +30,13 @@ from github_viz.providers import build_provider_registry, dataset_versions
 from github_viz.services import collect_evidence, collect_hypotheses, run_analysis
 
 logger = logging.getLogger(__name__)
+
+
+class EnrichRequest(BaseModel):
+    hypothesis_id: str
+    patient_summary: str
+    hypothesis_label: str
+    hypothesis_mechanism: str = ""
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -123,6 +125,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except Exception as exc:
             logger.exception("Analysis failed for analysis_id=%s", analysis_id)
             app.state.store.set_failed(analysis_id, str(exc))
+
+    # Timeout-wrapped version to prevent infinite hangs
+    ANALYSIS_TIMEOUT_SECONDS = 120
+
+    def _safe_analysis_worker(analysis_id: str, req: AnalyzeRequest) -> None:
+        """Run analysis with a timeout guard."""
+        inner_executor = ThreadPoolExecutor(max_workers=1)
+        try:
+            future = inner_executor.submit(_analysis_worker, analysis_id, req)
+            future.result(timeout=ANALYSIS_TIMEOUT_SECONDS)
+        except FuturesTimeoutError:
+            logger.error("Analysis timed out after %ds for analysis_id=%s", ANALYSIS_TIMEOUT_SECONDS, analysis_id)
+            app.state.store.set_failed(analysis_id, f"Analysis timed out after {ANALYSIS_TIMEOUT_SECONDS}s. Try 'offline' evidence mode.")
+        except Exception as exc:
+            logger.exception("Unexpected error in safe worker for analysis_id=%s", analysis_id)
+            if not app.state.store.get_analysis(analysis_id).get("completed_at"):
+                app.state.store.set_failed(analysis_id, str(exc))
+        finally:
+            inner_executor.shutdown(wait=False, cancel_futures=True)
 
     def _create_analysis(req: AnalyzeRequest) -> str:
         analysis_id = str(uuid.uuid4())
@@ -240,7 +261,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/analyses", response_model=AnalysisCreatedResponse)
     def create_analysis(req: AnalyzeRequest):
         analysis_id = _create_analysis(req)
-        app.state.executor.submit(_analysis_worker, analysis_id, req)
+        app.state.executor.submit(_safe_analysis_worker, analysis_id, req)
         return AnalysisCreatedResponse(id=analysis_id, status="queued", detail="Queued")
 
     @app.get("/analyses")
@@ -310,7 +331,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/analyze")
     def analyze(req: AnalyzeRequest):
         analysis_id = _create_analysis(req)
-        app.state.executor.submit(_analysis_worker, analysis_id, req)
+        app.state.executor.submit(_safe_analysis_worker, analysis_id, req)
         return {"id": analysis_id, "status": "queued"}
 
     @app.post("/analyze/local")
