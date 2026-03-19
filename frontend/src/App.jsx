@@ -1,195 +1,205 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import InputPanel from './components/InputPanel';
 import GraphCanvas from './components/GraphCanvas';
 import HypothesisPanel from './components/HypothesisPanel';
 import './App.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+const EMPTY_GRAPH = { nodes: [], links: [] };
+
+function formatErrorDetail(detail, fallback) {
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        const location = Array.isArray(item?.loc) ? item.loc.join('.') : 'request';
+        return `${location}: ${item?.msg || 'invalid value'}`;
+      })
+      .join('; ');
+  }
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+  return fallback;
+}
+
+async function readJson(response, fallbackMessage) {
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(formatErrorDetail(payload?.detail, fallbackMessage));
+  }
+  return payload;
+}
 
 function App() {
-  const [sessionId, setSessionId] = useState(null);
+  const [analysisId, setAnalysisId] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [graphData, setGraphData] = useState({ nodes: [], links: [] });
+  const [graphData, setGraphData] = useState(EMPTY_GRAPH);
   const [hypotheses, setHypotheses] = useState([]);
+  const [evidenceItems, setEvidenceItems] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
+  const [warnings, setWarnings] = useState([]);
   const [dataSources, setDataSources] = useState([]);
+  const [analysisProviders, setAnalysisProviders] = useState([]);
 
-  // ── helpers ──────────────────────────────────────────────────────────
-
-  /**
-   * Parse the free-text patient narrative into the structured
-   * PatientCase schema the backend expects, plus forward the raw
-   * text as report_text.
-   */
-  const buildRequestBody = (text) => {
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-    const extract = (prefix) =>
-      lines
-        .filter(l => l.toLowerCase().startsWith(prefix))
-        .map(l => l.replace(/^[^:]+:\s*/i, '').trim())
-        .filter(Boolean);
-
-    // Parse sex from "Sex: Male" etc.
-    const sexRaw = extract("sex:")[0] || "unknown";
-    const sexNormalized = sexRaw.toLowerCase();
-    const validSex = ["male", "female", "other"].includes(sexNormalized) ? sexNormalized : "unknown";
-
-    return {
-      patient_case: {
-        patient_id: "demo-patient",
-        age_range: extract("age:")[0] || "60-69",
-        sex: validSex,
-        diagnoses: extract("diagnosis:").concat(extract("diagnoses:")),
-        symptoms: extract("symptoms:").flatMap(s => s.split(',').map(t => t.trim())),
-        biomarkers: extract("biomarker:").concat(extract("biomarkers:")),
-        medications: extract("medication:").concat(extract("medications:")),
-      },
-      report_text: text,
-      evidence_mode: "hybrid",
-      with_ai: false,
-      ai: null,
-    };
+  const resetResults = () => {
+    setGraphData(EMPTY_GRAPH);
+    setHypotheses([]);
+    setEvidenceItems([]);
+    setStats(null);
+    setWarnings([]);
+    setAnalysisProviders([]);
   };
 
-  // ── data fetching ───────────────────────────────────────────────────
-
-  const fetchDataSources = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/datasets`);
-      if (res.ok) {
-        const data = await res.json();
-        const sources = data.items || [];
-        setDataSources(sources.map(s => s.provider_id));
-      }
-    } catch (err) {
-      console.error("Error fetching data sources:", err);
-    }
-  };
-
-  // Fetch data sources on mount
   useEffect(() => {
+    let cancelled = false;
+
+    const fetchDataSources = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/datasets`);
+        const payload = await readJson(response, 'Failed to load datasets.');
+        if (!cancelled) {
+          setDataSources((payload.items || []).map((item) => item.provider_id));
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          console.error('Error fetching data sources:', fetchError);
+        }
+      }
+    };
+
     fetchDataSources();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const fetchGraphData = async (sid) => {
-    try {
-      const [graphRes, statsRes, hypRes] = await Promise.all([
-        fetch(`${API_BASE}/graph/${sid}`),
-        fetch(`${API_BASE}/graph/${sid}/stats`),
-        fetch(`${API_BASE}/graph/${sid}/hypotheses`),
-      ]);
+  const fetchAnalysisArtifacts = async (id, statusPayload) => {
+    const [graphPayload, statsPayload, hypothesesPayload, evidencePayload] = await Promise.all([
+      readJson(await fetch(`${API_BASE}/analyses/${id}/graph`), 'Failed to load graph.'),
+      readJson(await fetch(`${API_BASE}/analyses/${id}/stats`), 'Failed to load stats.'),
+      readJson(await fetch(`${API_BASE}/analyses/${id}/hypotheses`), 'Failed to load hypotheses.'),
+      readJson(await fetch(`${API_BASE}/analyses/${id}/evidence`), 'Failed to load evidence.'),
+    ]);
 
-      if (graphRes.ok) {
-        const gd = await graphRes.json();
-        // ForceGraph2D expects { nodes: [...], links: [...] }
-        setGraphData({
-          nodes: gd.nodes || [],
-          links: gd.links || [],
-        });
-      }
-
-      if (statsRes.ok) {
-        setStats(await statsRes.json());
-      }
-
-      if (hypRes.ok) {
-        const hypData = await hypRes.json();
-        // Backend returns { items: [...] }
-        setHypotheses(hypData.items || []);
-      }
-    } catch (err) {
-      console.error("Error fetching graph data:", err);
-      setError("Failed to load graph data. Please try again.");
-    }
+    setGraphData({
+      nodes: graphPayload.nodes || [],
+      links: graphPayload.links || [],
+    });
+    setStats(statsPayload);
+    setHypotheses(hypothesesPayload.items || []);
+    setEvidenceItems(evidencePayload.items || []);
+    setWarnings([
+      ...new Set([...(statusPayload?.warnings || []), ...(graphPayload.meta?.warnings || [])]),
+    ]);
+    setAnalysisProviders(
+      (graphPayload.meta?.dataset_versions || []).map((item) => item.provider_id).filter(Boolean),
+    );
   };
 
-  // ── submit handler ──────────────────────────────────────────────────
-
-  const handlePatientSubmit = async (text) => {
-    setIsProcessing(true);
+  const handlePatientSubmit = async (submission) => {
     setError(null);
-    setGraphData({ nodes: [], links: [] });
-    setHypotheses([]);
-    setStats(null);
+    resetResults();
+    setAnalysisId(null);
+    setAnalysisStatus(null);
+    setIsProcessing(true);
 
     try {
-      const body = buildRequestBody(text);
-      const response = await fetch(`${API_BASE}/analyze/local`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
+      let analysisRequest = submission.payload;
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || `Server responded with ${response.status}`);
+      if (submission.mode === 'fhir') {
+        const parsed = JSON.parse(submission.fhirText);
+        const record = parsed?.record && typeof parsed.record === 'object' ? parsed.record : parsed;
+        const normalized = await readJson(
+          await fetch(`${API_BASE}/fhir/normalize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ record }),
+          }),
+          'FHIR normalization failed.',
+        );
+
+        analysisRequest = {
+          ...normalized,
+          evidence_mode: submission.evidenceMode,
+          input_format: 'fhir',
+        };
       }
 
-      const data = await response.json();
+      const created = await readJson(
+        await fetch(`${API_BASE}/analyses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(analysisRequest),
+        }),
+        'Failed to start analysis.',
+      );
 
-      // Backend returns { id, status, graph }
-      const sid = data.id;
-      if (!sid) {
-        throw new Error("No session ID returned from backend.");
-      }
-      setSessionId(sid);
-
-      // /analyze/local is synchronous – if status is "done" the graph is
-      // already in the response, but we fetch via dedicated endpoints to
-      // keep the data flow uniform and to get computed stats.
-      if (data.status === "done") {
-        setIsProcessing(false);
-        fetchGraphData(sid);
-      }
-      // Otherwise the polling effect below will pick it up.
-    } catch (err) {
-      console.error("Error submitting patient data:", err);
-      setError(err.message || "Submission failed.");
+      setAnalysisId(created.id);
+      setAnalysisStatus(created.status);
+    } catch (submitError) {
+      console.error('Error submitting patient data:', submitError);
+      setError(submitError.message || 'Submission failed.');
       setIsProcessing(false);
     }
   };
 
-  // ── polling (for the async /analyze endpoint, kept as safety net) ──
-
   useEffect(() => {
-    let intervalId;
-    if (sessionId && isProcessing) {
-      intervalId = setInterval(async () => {
-        try {
-          const statusRes = await fetch(`${API_BASE}/analyze/status/${sessionId}`);
-          if (statusRes.ok) {
-            const statusData = await statusRes.json();
-            // Backend uses "done" / "error" (not "completed" / "failed")
-            if (statusData.status === "done") {
-              setIsProcessing(false);
-              clearInterval(intervalId);
-              fetchGraphData(sessionId);
-            } else if (statusData.status === "error") {
-              setIsProcessing(false);
-              clearInterval(intervalId);
-              setError(statusData.detail || "Analysis failed on the server.");
-            }
-          }
-        } catch (err) {
-          console.error("Polling error:", err);
-        }
-      }, 2000);
+    if (!analysisId || !isProcessing) {
+      return undefined;
     }
-    return () => clearInterval(intervalId);
-  }, [sessionId, isProcessing]);
 
-  // ── render ──────────────────────────────────────────────────────────
+    let cancelled = false;
+
+    const pollStatus = async () => {
+      try {
+        const payload = await readJson(
+          await fetch(`${API_BASE}/analyses/${analysisId}`),
+          'Failed to check analysis status.',
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setAnalysisStatus(payload.status);
+        setWarnings(payload.warnings || []);
+
+        if (payload.status === 'completed') {
+          setIsProcessing(false);
+          await fetchAnalysisArtifacts(analysisId, payload);
+        } else if (payload.status === 'failed') {
+          setIsProcessing(false);
+          setError(payload.detail || 'Analysis failed on the server.');
+        }
+      } catch (statusError) {
+        if (cancelled) {
+          return;
+        }
+        console.error('Polling error:', statusError);
+        setIsProcessing(false);
+        setError(statusError.message || 'Status check failed.');
+      }
+    };
+
+    pollStatus();
+    const intervalId = setInterval(pollStatus, 2000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [analysisId, isProcessing]);
+
+  const visibleProviders = analysisProviders.length > 0 ? analysisProviders : dataSources;
+  const patientSummary = stats?.patient_profile?.summary || stats?.patient_profile?.label || 'Patient case';
 
   return (
     <div className="app-container dashboard-mode">
       <div className="sidebar-left">
         <InputPanel onSubmit={handlePatientSubmit} isProcessing={isProcessing} />
-        {error && (
-          <div className="error-banner">
-            <p>{error}</p>
-          </div>
-        )}
       </div>
 
       <div className="main-canvas">
@@ -197,7 +207,9 @@ function App() {
           {isProcessing && (
             <div className="status-indicator">
               <span className="status-dot pulsing"></span>
-              <span className="status-text">Agentic Processing Active...</span>
+              <span className="status-text">
+                {analysisStatus === 'running' ? 'Generating Cure Graph...' : 'Queued for analysis...'}
+              </span>
             </div>
           )}
         </div>
@@ -207,12 +219,12 @@ function App() {
           <div className="stats-overlay glass-panel">
             <div className="data-sources">
               <span className="sources-label">Data Sources:</span>
-              {dataSources.length > 0 ? (
-                dataSources.map(source => (
+              {visibleProviders.length > 0 ? (
+                visibleProviders.map((source) => (
                   <span key={source} className="source-badge">{source}</span>
                 ))
               ) : (
-                <span className="source-badge">loading...</span>
+                <span className="source-badge">none</span>
               )}
             </div>
             <div className="stat-item">
@@ -238,7 +250,10 @@ function App() {
       <div className="sidebar-right">
         <HypothesisPanel
           hypotheses={hypotheses}
-          patientSummary={stats?.patient_profile?.summary || stats?.patient_profile?.label || 'Patient case'}
+          evidenceItems={evidenceItems}
+          patientSummary={patientSummary}
+          warnings={warnings}
+          isProcessing={isProcessing}
         />
       </div>
     </div>
